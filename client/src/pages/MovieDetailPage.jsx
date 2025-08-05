@@ -15,13 +15,31 @@ import {
     X,
     ArrowLeft
 } from 'lucide-react';
+import {useNavigate} from "react-router-dom";
 
 const MoviePage = () => {
     const [selectedDate, setSelectedDate] = useState('2025-08-06');
     const [selectedCinema, setSelectedCinema] = useState('Grand Cinema Downtown');
     const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+    const [selectedTime,setSelectedTime] = useState(null);
     const [showFullCast, setShowFullCast] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const navigate = useNavigate();
+    const handleShowtimeClick = () => {
+        if (!selectedTime) {
+            alert('Please select a showtime first');
+            return;
+        }
+
+        navigate('/seat-booking', {
+            state: {
+                movie,
+                date: selectedDate,
+                cinema: selectedCinema,
+                time: selectedTime
+            }
+        });
+    };
 
     // Movie data
     const movie = {
@@ -270,7 +288,7 @@ const MoviePage = () => {
                         </div>
 
                         {/* Showtimes */}
-                        <div className="p-6 rounded-xl" style={{ backgroundColor: '#1E1E2F' }}>
+                        <div className="p-6 rounded-xl" style={{backgroundColor: '#1E1E2F'}}>
                             <h3 className="text-xl font-bold mb-6">Showtimes</h3>
 
                             {/* Date Selection */}
@@ -280,7 +298,7 @@ const MoviePage = () => {
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
                                     className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{ backgroundColor: '#121212' }}
+                                    style={{backgroundColor: '#121212'}}
                                 >
                                     {Object.keys(showtimes).map(date => (
                                         <option key={date} value={date}>{formatDate(date)}</option>
@@ -295,7 +313,7 @@ const MoviePage = () => {
                                     value={selectedCinema}
                                     onChange={(e) => setSelectedCinema(e.target.value)}
                                     className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{ backgroundColor: '#121212' }}
+                                    style={{backgroundColor: '#121212'}}
                                 >
                                     {Object.keys(showtimes[selectedDate] || {}).map(cinema => (
                                         <option key={cinema} value={cinema}>{cinema}</option>
@@ -304,18 +322,34 @@ const MoviePage = () => {
                             </div>
 
                             {/* Showtimes Grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {(showtimes[selectedDate]?.[selectedCinema] || []).map((time, idx) => (
-                                    <button
-                                        key={idx}
-                                        className="p-3 rounded-lg border border-gray-600 hover:border-yellow-500 hover:bg-yellow-500 hover:text-black transition-all duration-200 text-center font-medium"
-                                    >
-                                        {time}
-                                    </button>
-                                ))}
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Select Time</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {(showtimes[selectedDate]?.[selectedCinema] || []).map((time, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedTime(time)}
+                                            className={`p-3 rounded-lg border text-center font-medium transition-all duration-200 ${
+                                                selectedTime === time
+                                                    ? 'bg-yellow-500 border-yellow-500 text-black'
+                                                    : 'border-gray-600 hover:border-yellow-500'
+                                            }`}
+                                        >
+                                            {time}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <button className="w-full mt-6 py-4 rounded-lg font-semibold text-black text-lg hover:scale-105 transform transition-all duration-200" style={{ backgroundColor: '#FFD700' }}>
+                            <button
+                                onClick={handleShowtimeClick}
+                                disabled={!selectedTime}
+                                className={`w-full py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                                    selectedTime
+                                        ? 'bg-yellow-500 text-black hover:scale-[1.02] hover:bg-yellow-600'
+                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                }`}
+                            >
                                 Continue to Seat Selection
                             </button>
                         </div>
@@ -323,25 +357,25 @@ const MoviePage = () => {
                 </div>
             </div>
 
-            {/* Trailer Modal */}
-            {isTrailerPlaying && (
-                <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-                    <div className="relative w-full max-w-4xl aspect-video">
-                        <button
-                            onClick={() => setIsTrailerPlaying(false)}
-                            className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
-                        >
-                            <X size={32} />
-                        </button>
-                        <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
-                            <div className="text-center">
-                                <Play className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                                <p className="text-gray-400">Trailer would play here</p>
+                {/* Trailer Modal */}
+                {isTrailerPlaying && (
+                    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+                        <div className="relative w-full max-w-4xl aspect-video">
+                            <button
+                                onClick={() => setIsTrailerPlaying(false)}
+                                className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
+                            >
+                                <X size={32}/>
+                            </button>
+                            <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
+                                <div className="text-center">
+                                    <Play className="w-16 h-16 mx-auto mb-4 text-gray-400"/>
+                                    <p className="text-gray-400">Trailer would play here</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
         </>
     );
 };

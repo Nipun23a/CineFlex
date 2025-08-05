@@ -10,6 +10,7 @@ import {LogIn} from "lucide-react";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import RegisterPage from "./pages/auth/RegisterPage.jsx";
 import {AuthProvider} from "./context/AuthContext.jsx";
+import SeatBookingPage from "./pages/SeatBookingPage.jsx";
 
 function App() {
 
@@ -40,6 +41,10 @@ function App() {
                                 <MovieDetailPage/>
                             </MainLayout>
                         }
+                    />
+                    <Route
+                        path="/seat-booking"
+                        element={<MainLayout><SeatBookingPage /></MainLayout>}
                     />
                     <Route
                         path='/login'
