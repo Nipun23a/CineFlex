@@ -3,12 +3,14 @@ import Theater from '../models/Theater.js';
 // Create a new theater
 export const createTheater = async (req, res) => {
     try {
-        const { name, location, screens } = req.body;
+        const { name, location,row,seatsPerRow, screens } = req.body;
 
         const theater = new Theater({
             name,
             location,
-            screens
+            row,
+            seatsPerRow,
+            screens,
         });
 
         await theater.save();

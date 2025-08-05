@@ -1,6 +1,6 @@
 import Showtime from '../models/Showtime.js';
 import Movie from '../models/Movie.js';
-import Theater from '../models/Theatre.js';
+import Theater from '../models/Theater.js';
 
 
 export const createShowtime = async (req, res) => {
