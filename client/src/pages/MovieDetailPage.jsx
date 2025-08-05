@@ -30,7 +30,7 @@ const MoviePage = () => {
         tagline: "Reality is just the beginning",
         description: "When reality itself becomes unstable, a quantum physicist must navigate parallel dimensions to save humanity from an interdimensional collapse that threatens all existence. Dr. Sarah Chen discovers that her groundbreaking research has torn holes in the fabric of spacetime, allowing dangerous entities from alternate realities to seep into our world.",
         fullDescription: "As Sarah races against time to repair the quantum rifts, she must confront versions of herself from different timelines, each with their own agenda. With the help of a mysterious interdimensional traveler and her brilliant research team, she embarks on a mind-bending journey through parallel worlds where the laws of physics bend to the will of consciousness itself. The fate of not just our reality, but all possible realities, hangs in the balance.",
-        poster: "https://images.unsplash.com/photo-1489599735946-22bb13d0d6f1?w=800&h=1200&fit=crop",
+        poster: "https://images.unsplash.com/photo-1460881680858-30d872d5b530?w=400&h=600&fit=crop",
         backdrop: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=1920&h=1080&fit=crop",
         rating: 8.7,
         duration: 142,

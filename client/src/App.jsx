@@ -6,6 +6,9 @@ import HomePage from "./pages/HomePage.jsx";
 
 import MovieDetailPage from "./pages/MovieDetailPage.jsx";
 import AllMoviePage from "./pages/AllMoviePage.jsx";
+import {LogIn} from "lucide-react";
+import LoginPage from "./pages/auth/LoginPage.jsx";
+import RegisterPage from "./pages/auth/RegisterPage.jsx";
 
 function App() {
 
@@ -33,6 +36,22 @@ function App() {
                     element={
                         <MainLayout>
                             <MovieDetailPage/>
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path='/login'
+                    element={
+                        <MainLayout>
+                            <LoginPage/>
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path='/register'
+                    element={
+                        <MainLayout>
+                            <RegisterPage/>
                         </MainLayout>
                     }
                 />
