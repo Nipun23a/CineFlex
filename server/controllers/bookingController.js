@@ -3,7 +3,7 @@ import Booking from '../models/Booking.js';
 import Showtime from '../models/Showtime.js';
 import Theater from '../models/Theater.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+//const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createBooking = async (req, res) => {
     try {
@@ -44,7 +44,7 @@ export const createBooking = async (req, res) => {
 };
 
 
-export const createBookingStripe = async (req, res) => {
+/*export const createBookingStripe = async (req, res) => {
     try {
         const { userId, showtimeId, seats } = req.body;
 
@@ -126,7 +126,7 @@ export const handleStripeWebhook = async (req, res) => {
     } catch (err) {
         res.status(400).send(`Webhook Error: ${err.message}`);
     }
-};
+};*/
 
 export const getAllBookings = async (req, res) => {
     try {
