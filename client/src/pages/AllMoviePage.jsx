@@ -1,6 +1,7 @@
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import MovieCard from "../components/MovieCard.jsx";
 import { Star, Calendar, Clock, Search, Filter, Grid, List, ChevronDown } from 'lucide-react';
+import {getAllMovies} from "../utils/api.js";
 
 const AllMoviePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -10,178 +11,24 @@ const AllMoviePage = () => {
     const [sortBy, setSortBy] = useState('popularity');
     const [viewMode, setViewMode] = useState('grid');
     const [showFilters, setShowFilters] = useState(false);
+    const [movies,setMovies] = useState([]);
 
-    // Sample movies data
-    const movies = [
-        {
-            id: 1,
-            title: "Quantum Nexus",
-            poster: "https://images.unsplash.com/photo-1489599735946-22bb13d0d6f1?w=400&h=600&fit=crop",
-            rating: 8.7,
-            year: 2025,
-            genre: ["Sci-Fi", "Thriller"],
-            duration: 142,
-            status: "now-showing",
-            popularity: 95
-        },
-        {
-            id: 2,
-            title: "Shadow Protocol",
-            poster: "https://images.unsplash.com/photo-1460881680858-30d872d5b530?w=400&h=600&fit=crop",
-            rating: 8.2,
-            year: 2025,
-            genre: ["Action", "Thriller"],
-            duration: 128,
-            status: "now-showing",
-            popularity: 88
-        },
-        {
-            id: 3,
-            title: "Mystic Gardens",
-            poster: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop",
-            rating: 7.9,
-            year: 2025,
-            genre: ["Fantasy", "Adventure"],
-            duration: 135,
-            status: "now-showing",
-            popularity: 82
-        },
-        {
-            id: 4,
-            title: "Digital Dreams",
-            poster: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop",
-            rating: 8.5,
-            year: 2025,
-            genre: ["Sci-Fi", "Drama"],
-            duration: 156,
-            status: "now-showing",
-            popularity: 91
-        },
-        {
-            id: 5,
-            title: "Ocean's Edge",
-            poster: "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400&h=600&fit=crop",
-            rating: 7.6,
-            year: 2024,
-            genre: ["Adventure", "Drama"],
-            duration: 118,
-            status: "now-showing",
-            popularity: 75
-        },
-        {
-            id: 6,
-            title: "Neon Nights",
-            poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop",
-            rating: 8.1,
-            year: 2024,
-            genre: ["Crime", "Thriller"],
-            duration: 145,
-            status: "now-showing",
-            popularity: 86
-        },
-        {
-            id: 7,
-            title: "Stellar Odyssey",
-            poster: "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=600&fit=crop",
-            rating: 8.9,
-            year: 2025,
-            genre: ["Sci-Fi", "Adventure"],
-            duration: 178,
-            status: "coming-soon",
-            popularity: 98
-        },
-        {
-            id: 8,
-            title: "The Last Kingdom",
-            poster: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop",
-            rating: 8.4,
-            year: 2025,
-            genre: ["Fantasy", "Action"],
-            duration: 162,
-            status: "coming-soon",
-            popularity: 89
-        },
-        {
-            id: 9,
-            title: "Code Red",
-            poster: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
-            rating: 7.8,
-            year: 2025,
-            genre: ["Action", "Thriller"],
-            duration: 134,
-            status: "coming-soon",
-            popularity: 81
-        },
-        {
-            id: 10,
-            title: "Midnight Express",
-            poster: "https://images.unsplash.com/photo-1594736797933-d0601ba2fe65?w=400&h=600&fit=crop",
-            rating: 8.0,
-            year: 2024,
-            genre: ["Mystery", "Drama"],
-            duration: 127,
-            status: "now-showing",
-            popularity: 77
-        },
-        {
-            id: 11,
-            title: "Aurora Rising",
-            poster: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400&h=600&fit=crop",
-            rating: 8.6,
-            year: 2025,
-            genre: ["Sci-Fi", "Adventure"],
-            duration: 149,
-            status: "coming-soon",
-            popularity: 93
-        },
-        {
-            id: 12,
-            title: "Silent Echoes",
-            poster: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop",
-            rating: 7.7,
-            year: 2024,
-            genre: ["Horror", "Thriller"],
-            duration: 112,
-            status: "now-showing",
-            popularity: 73
-        },
-        {
-            id: 13,
-            title: "Phoenix Protocol",
-            poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop",
-            rating: 8.3,
-            year: 2024,
-            genre: ["Action", "Sci-Fi"],
-            duration: 141,
-            status: "now-showing",
-            popularity: 84
-        },
-        {
-            id: 14,
-            title: "Crimson Dawn",
-            poster: "https://images.unsplash.com/photo-1489599735946-22bb13d0d6f1?w=400&h=600&fit=crop",
-            rating: 7.5,
-            year: 2023,
-            genre: ["Drama", "Romance"],
-            duration: 125,
-            status: "now-showing",
-            popularity: 69
-        },
-        {
-            id: 15,
-            title: "Thunder Valley",
-            poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop",
-            rating: 8.8,
-            year: 2025,
-            genre: ["Western", "Action"],
-            duration: 158,
-            status: "coming-soon",
-            popularity: 96
-        }
-    ];
+    useEffect(() => {
+        const fetchMovies = async () => {
+            try {
+                const res = await getAllMovies();
+                setMovies(res.data);
+            } catch (error) {
+                console.error("Failed to fetch movies", error);
+            }
+        };
 
-    const genres = ['All', ...new Set(movies.flatMap(movie => movie.genre))];
-    const years = ['All', ...new Set(movies.map(movie => movie.year))].sort((a, b) => b - a);
+        fetchMovies();
+    }, []);
+
+
+    const genres = useMemo(() => ['All', ...new Set(movies.flatMap(movie => movie.genre || []))], [movies]);
+    const years = useMemo(() => ['All', ...new Set(movies.map(movie => movie.year))].sort((a, b) => b - a), [movies]);
     const ratings = ['All', '8.5+', '8.0+', '7.5+', '7.0+'];
 
     // Filter and sort movies
