@@ -1,8 +1,13 @@
 // src/pages/RegisterPage.jsx
 import { useState } from "react";
 import { User, Mail, Lock, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../context/AuthContext.jsx";
+import {registerUser} from "../../utils/api.js";
 
 const RegisterPage = () => {
+    const navigation = useNavigate();
+    const {login} = useAuth();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -11,7 +16,7 @@ const RegisterPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
 
         setErrorMessage("");
@@ -36,13 +41,19 @@ const RegisterPage = () => {
             return;
         }
 
-        console.log("Registration data:", { name, email, password });
-
-        setName("");
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        setErrorMessage("Registration successful! Redirecting...");
+        try{
+            const response = await registerUser({name,email,password});
+            const {token,user} = response.data;
+            setName("");
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
+            setErrorMessage("Registration successful! Redirecting...");
+            login(token,user);
+            navigation('/');
+        }catch (error){
+            setErrorMessage(error.response?.data?.message || "Registration failed")
+        }
     };
 
     return (
