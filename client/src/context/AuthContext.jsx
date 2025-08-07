@@ -7,24 +7,31 @@ export const AuthProvider = ({children}) => {
     const [loading,setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const userStr = localStorage.getItem('user')|| sessionStorage.getItem('user');
+        if (token && userStr) {
             try {
-                const userData = JSON.parse(localStorage.getItem('user'));
+                const userData = JSON.parse(userStr);
                 setUser(userData);
             }catch (error){
-                console.error('Token verification failed',error)
+                console.log('Token verfication failed:',error);
                 logout()
             }
         }
         setLoading(false);
-    }, []);
 
-    const login = (userData,token) => {
-        localStorage.setItem('token',token);
-        localStorage.setItem('user',JSON.stringify(userData));
-        setUser(userData);
-    }
+        }, []);
+
+   const login = (userData,token,remeberMe=false)=>{
+       if (remeberMe){
+           localStorage.setItem('token',token);
+           localStorage.setItem('user',JSON.stringify(userData));
+       }else {
+           sessionStorage.setItem('token',token);
+           sessionStorage.setItem('user',JSON.stringify(userData));
+       }
+       setUser(userData)
+   }
 
     const logout = () => {
         localStorage.removeItem('token');

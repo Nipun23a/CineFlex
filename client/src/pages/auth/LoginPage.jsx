@@ -1,16 +1,22 @@
 // src/pages/LoginPage.jsx
 import { useState } from "react";
 import { Eye, EyeOff, User, Lock, ChevronLeft } from "lucide-react";
+import {loginUser} from "../../utils/api.js";
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../context/AuthContext.jsx";
 
 
 const LoginPage = () => {
+    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const handleLogin = (e) => {
+    const {login} = useAuth();
+
+    const handleLogin = async (e) => {
         e.preventDefault();
 
         if (!email || !password) {
@@ -24,7 +30,19 @@ const LoginPage = () => {
         }
 
         console.log("Login attempt with:", { email, password, rememberMe });
-        setErrorMessage("");
+        try {
+            const response = await loginUser({email,password});
+            const {token,user} = response.data;
+            login(user,token,rememberMe);
+            if (user.role === 'admin'){
+                navigate('/admin');
+            }else {
+                navigate('/');
+            }
+            setErrorMessage("");
+        }catch (error){
+            setErrorMessage(error.response?.data?.message || "Login failed");
+        }
     };
 
     return (
