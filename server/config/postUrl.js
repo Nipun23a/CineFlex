@@ -1,12 +1,11 @@
 import axios from "axios";
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 export const getPosterUrl = async (title) => {
     try {
         const res = await axios.get('https://api.themoviedb.org/3/search/movie', {
             params: {
-                api_key: TMDB_API_KEY,
+                api_key: process.env.TMDB_API_KEY,
                 query: title,
             },
         });

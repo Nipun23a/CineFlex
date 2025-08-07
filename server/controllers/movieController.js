@@ -1,15 +1,30 @@
 import Movie from '../models/Movie.js';
+import {getPosterUrl} from "../config/postUrl.js";
 
 
 export const createMovie = async (req, res) => {
     try {
-        const movie = new Movie(req.body);
+        const { title, posterUrl, ...rest } = req.body;
+        let finalPosterUrl = posterUrl;
+        if (!posterUrl && title) {
+            finalPosterUrl = await getPosterUrl(title);
+        }
+
+        const movie = new Movie({
+            title,
+            posterUrl: finalPosterUrl,
+            ...rest
+        });
+
         await movie.save();
+
         res.status(201).json({ message: 'Movie created successfully', movie });
     } catch (err) {
+        console.error('Create Movie Error:', err.message);
         res.status(500).json({ message: 'Failed to create movie', error: err.message });
     }
 };
+
 
 
 export const getAllMovies = async (req, res) => {

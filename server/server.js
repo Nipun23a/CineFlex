@@ -19,6 +19,8 @@ connectDB().then(async () => {
     await runSeeders(); // 👈 Call only once after DB connection
 });
 
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());

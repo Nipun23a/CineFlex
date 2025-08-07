@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+
 
 export const register = async (req,res) => {
     try{
@@ -18,30 +18,49 @@ export const register = async (req,res) => {
     }
 };
 
-export const login = async (req,res) =>{
-    try{
-        const {email,password} = req.body;
-        const user = await user.findOne({email});
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
 
-        if (!user) return res.status(400).json({message:'Invalid email or password'});
-        const isMatch = await bcrypt.compare(password,user.password);
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid email or password' });
+        }
 
-        const token = jwt.sign({id:user._id,role:user.role},JWT_SECRET,{expiresIn: '1d'});
-        res.json({token,user:{id:user._id,name:user.name,role:user.role}});
-    }catch (error){
-        res.status(500).json({message:"Login failed",error:error.message});
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid email or password' });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        res.json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Login failed', error: error.message });
     }
-}
+};
+
 
 
 
 export const updatePassword = async (req,res) => {
     try {
-        const {userId, oldPassword,newPassword,} = req.body;
+        const {userId,oldPassword,newPassword} = req.body;
         const user = await User.findById(userId);
         if (!user) return res.status(400).json({message:'User not found'});
 
-        const isMatch = await bcrypt.compare(oldPassword,newPassword);
+        const isMatch = await bcrypt.compare(oldPassword,user.password);
         if (!isMatch) return res.status(400).json({message:'Old password is incorrect'});
 
         user.password = await bcrypt.hash(newPassword, 10);
