@@ -11,6 +11,8 @@ import showtimeRoutes from './routes/showtimeRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import theaterRoutes from './routes/theaterRoutes.js';
 import runSeeders from "./seeders/index.js";
+import {createShowtime} from "./controllers/showtimeController.js";
+import {Server} from "socket.io";
 
 
 
@@ -25,6 +27,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');

@@ -71,6 +71,11 @@ const MoviePage = () => {
         hydrateTmdb();
     }, [movie]);
 
+    const selectedShowtimeObj = showtimesData.find(st =>
+        new Date(st.date).toISOString().split('T')[0] === selectedDate &&
+        st.theater?.name === selectedCinema &&
+        st.startTime === selectedTime
+    );
 
     const handleShowtimeClick = () => {
         if (!selectedTime) {
@@ -78,13 +83,11 @@ const MoviePage = () => {
             return;
         }
 
-        navigate("/seat-booking", {
+        navigate('/seat-booking', {
             state: {
-                movie,
-                date: selectedDate,
-                cinema: selectedCinema,
-                time: selectedTime,
-            },
+                movie, date: selectedDate, cinema: selectedCinema, time: selectedTime,
+                showtimeId: selectedShowtimeObj?._id, price: selectedShowtimeObj?.price
+            }
         });
     };
 
@@ -124,6 +127,8 @@ const MoviePage = () => {
         acc[date][name].push(st.startTime);
         return acc;
     }, {});
+
+
 
     const showtimes = groupedShowtimes;
 

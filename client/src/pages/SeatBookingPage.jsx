@@ -2,17 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Ticket,Calendar,Clock,MapPin } from 'lucide-react';
-import MainLayout from '../layouts/MainLayout';
+import {getAllSeatForShowTime} from "../utils/api.js";
 
 const SeatBookingPage = () => {
+
     const navigate = useNavigate();
     const location = useLocation();
-    const { movie, date, cinema, time } = location.state || {};
+    const { showtimeId, price,movie, date, cinema, time} = location.state || {};
+    console.log(showtimeId);
 
     const [seats, setSeats] = useState([]);
     const [selectedSeats, setSelectedSeats] = useState([]);
     const [rows, setRows] = useState(8);
     const [cols, setCols] = useState(12);
+
+    const [bookedCodes, setBookedCodes] = useState(new Set());
+    const [loadingBooked, setLoadingBooked] = useState(false);
 
     // Redirect if no booking info
     useEffect(() => {
@@ -21,53 +26,67 @@ const SeatBookingPage = () => {
         }
     }, [movie, date, cinema, time, navigate]);
 
-    // Generate theater seats
     useEffect(() => {
-        const generateSeats = () => {
-            const newSeats = [];
-            const rowNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        if (!showtimeId) return;
 
-            for (let r = 0; r < rows; r++) {
-                const row = [];
-                for (let c = 0; c < cols; c++) {
-                    // Simulate some booked seats (20% chance)
-                    const isBooked = Math.random() < 0.2;
+        let isMounted = true;
+        setLoadingBooked(true);
+        getAllSeatForShowTime(showtimeId)
+            .then(({ data }) => {
+                // backend returns { codes: ["A1","B2",...], seats: [{row,number,code}] }
+                const codes =
+                    data?.codes ??
+                    (Array.isArray(data?.seats)
+                        ? data.seats.map(s => s.code || `${s.row}${s.number}`)
+                        : []);
+                if (isMounted) setBookedCodes(new Set(codes));
+            })
+            .catch(err => {
+                console.error('Failed to load booked seats', err);
+                if (isMounted) setBookedCodes(new Set());
+            })
+            .finally(() => isMounted && setLoadingBooked(false));
 
-                    row.push({
-                        id: `${rowNames[r]}${c+1}`,
-                        row: rowNames[r],
-                        number: c + 1,
-                        status: isBooked ? 'booked' : 'available',
-                        isSelected: false
-                    });
-                }
-                newSeats.push(row);
-            }
-            setSeats(newSeats);
-        };
+        return () => { isMounted = false; };
+    }, [showtimeId]);
 
-        generateSeats();
-    }, [rows, cols]);
+    useEffect(() => {
+        const rowNames = ['A','B','C','D','E','F','G','H'];
+
+        const grid = rowNames.slice(0, rows).map(r =>
+            Array.from({ length: cols }, (_, c) => {
+                const code = `${r}${c + 1}`;
+                const isBooked = bookedCodes.has(code);
+                return {
+                    id: code,
+                    row: r,
+                    number: c + 1,
+                    status: isBooked ? 'booked' : 'available',
+                    isSelected: false,
+                };
+            })
+        );
+
+        setSeats(grid);
+        setSelectedSeats([]); // clear selections if layout or bookings changed
+    }, [rows, cols, bookedCodes]);
 
     const handleSeatClick = (rowIndex, colIndex) => {
         const seat = seats[rowIndex][colIndex];
+        if (seat.status !== 'available') return; // can't select booked
 
-        if (seat.status !== 'available') return;
-
-        const newSeats = [...seats];
-        newSeats[rowIndex][colIndex] = {
-            ...seat,
-            isSelected: !seat.isSelected
-        };
-
+        const newSeats = seats.map((row, r) =>
+            row.map((s, c) =>
+                r === rowIndex && c === colIndex ? { ...s, isSelected: !s.isSelected } : s
+            )
+        );
         setSeats(newSeats);
 
-        // Update selected seats list
-        if (newSeats[rowIndex][colIndex].isSelected) {
-            setSelectedSeats([...selectedSeats, seat.id]);
-        } else {
-            setSelectedSeats(selectedSeats.filter(id => id !== seat.id));
-        }
+        // use the seat code for selected list
+        const code = seat.id; // e.g., "A7"
+        setSelectedSeats(prev =>
+            !seat.isSelected ? [...prev, code] : prev.filter(id => id !== code)
+        );
     };
 
     const getSeatColor = (status, isSelected) => {
@@ -143,6 +162,10 @@ const SeatBookingPage = () => {
                                 <div className="text-gray-400 font-medium mt-2">SCREEN</div>
                             </div>
 
+                            {loadingBooked && (
+                                <div className="text-center text-gray-400 mb-4">Loading booked seats…</div>
+                            )}
+
                             <div className="space-y-4">
                                 {seats.map((row, rowIndex) => (
                                     <div key={rowIndex} className="flex items-center gap-4">
@@ -212,12 +235,9 @@ const SeatBookingPage = () => {
                                     <h4 className="font-semibold mb-2">Selected Seats</h4>
                                     {selectedSeats.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
-                                            {selectedSeats.map(seat => (
-                                                <div
-                                                    key={seat}
-                                                    className="px-3 py-1 rounded-full bg-yellow-500 bg-opacity-20 text-yellow-500"
-                                                >
-                                                    {seat}
+                                            {selectedSeats.map(code => (
+                                                <div key={code} className="px-3 py-1 rounded-full bg-yellow-500 bg-opacity-20 text-sm">
+                                                    {code}
                                                 </div>
                                             ))}
                                         </div>

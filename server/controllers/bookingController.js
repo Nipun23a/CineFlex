@@ -196,3 +196,54 @@ export const updatePaymentStatus = async (req, res) => {
         res.status(500).json({ message: 'Failed to update payment status', error: error.message });
     }
 };
+
+export const getBookedSeatsByShowtime = async (req, res) => {
+    try {
+        const { showtimeId } = req.params;
+        const includePending = req.query.includePending === 'true';
+        const statuses = includePending ? ['paid', 'pending'] : ['paid'];
+
+        const bookings = await Booking.find(
+            { showtime: showtimeId, paymentStatus: { $in: statuses } },
+        )
+            .select('seats -_id')
+            .lean();
+
+        const codesSet = new Set();
+        const seats = [];
+
+        const pushSeat = (seat) => {
+            if (!seat || seat.row == null || seat.number == null) return;
+            const code = `${seat.row}${seat.number}`;
+            if (!codesSet.has(code)) {
+                codesSet.add(code);
+                seats.push({ row: seat.row, number: seat.number, code });
+            }
+        };
+
+        for (const b of bookings) {
+            const seatField = b.seats || [];
+            for (const entry of seatField) {
+                if (Array.isArray(entry)) {
+                    // array-of-arrays case: [[{row, number}, ...], ...]
+                    for (const seat of entry) pushSeat(seat);
+                } else {
+                    // flat case: [{row, number}, ...]
+                    pushSeat(entry);
+                }
+            }
+        }
+
+        res.json({
+            showtimeId,
+            count: seats.length,
+            seats,
+            codes: seats.map((s) => s.code),
+        });
+    } catch (error) {
+        console.error('getBookedSeatsByShowtime error:', error);
+        res
+            .status(500)
+            .json({ message: 'Failed to load booked seats', error: error.message });
+    }
+};

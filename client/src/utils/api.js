@@ -157,4 +157,9 @@ export const getBookingByUser = async (userId) => {
     return await axiosInstance.get(`/bookings/user/${userId}`)
 }
 
+// Get all the booked sheet from
+export const getAllSeatForShowTime = async (showTimeId) =>{
+    return axiosInstance.get(`/bookings/showtimes/${showTimeId}/booked-seats?includePending=true`);
+}
+
 
