@@ -133,6 +133,11 @@ export const deleteShowTime = async (id) => {
     return await axiosInstance.delete(`/showtimes/${id}`);
 }
 
+// Get Showtime by Movie
+export const getShowTimeByMovie = async (movieId) =>{
+    return await axiosInstance.get(`/showtimes/movies/${movieId}`);
+}
+
 // ===================== BOOKING APIs =====================
 // Create Booking
 export const createBooking = async (bookingData) => {

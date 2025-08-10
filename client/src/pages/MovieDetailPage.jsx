@@ -1,115 +1,142 @@
-import React, { useState } from 'react';
-import {
-    Star,
-    Calendar,
-    Clock,
-    Play,
-    Heart,
-    Share2,
-    Users,
-    Film,
-    MapPin,
-    ChevronDown,
-    ChevronUp,
-    Menu,
-    X,
-    ArrowLeft
-} from 'lucide-react';
-import {useNavigate} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Star, Clock, Calendar, Film, Play, Heart, Share2, ChevronUp, ChevronDown, X } from "lucide-react";
+import {getShowTimeByMovie} from "../utils/api.js";
+import {findTmdbMovieId, getTmdbCast, getTmdbReviews} from "../utils/tmdb.js";
 
 const MoviePage = () => {
-    const [selectedDate, setSelectedDate] = useState('2025-08-06');
-    const [selectedCinema, setSelectedCinema] = useState('Grand Cinema Downtown');
+    const { id } = useParams();
+    const navigate = useNavigate();
+
+    const [movie, setMovie] = useState(null);
+    const [showtimesData, setShowtimesData] = useState([]);
+    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedCinema, setSelectedCinema] = useState('');
+    const [selectedTime, setSelectedTime] = useState(null);
+
     const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
-    const [selectedTime,setSelectedTime] = useState(null);
     const [showFullCast, setShowFullCast] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
-    const navigate = useNavigate();
+    const [tmdbCast, setTmdbCast] = useState([]);
+    const [tmdbReviews,setTmdbReviews] = useState([]);
+    const [tmdbLoading,setTmdbLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await getShowTimeByMovie(id);
+                const data = response.data;
+
+                if (Array.isArray(data) && data.length > 0) {
+                    setMovie(data[0].movie);
+                    setShowtimesData(data);
+
+                    const defaultDate = new Date(data[0].date).toISOString().split("T")[0];
+                    const defaultCinema = data[0].theater?.name ?? '';
+                    setSelectedDate(defaultDate);
+                    setSelectedCinema(defaultCinema);
+                }
+            } catch (error) {
+                console.error("Failed to fetch showtimes", error);
+            }
+        };
+
+        fetchData();
+    }, [id]);
+
+    useEffect(() => {
+        const hydrateTmdb = async () => {
+            if (!movie?.title) return;
+            setTmdbLoading(true);
+            try {
+                const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : undefined;
+                const tmdbId = await findTmdbMovieId(movie.title, year);
+                if (!tmdbId) {
+                    setTmdbCast([]);
+                    setTmdbReviews([]);
+                    return;
+                }
+                const [cast, reviews] = await Promise.all([
+                    getTmdbCast(tmdbId, { limit: 18 }),
+                    getTmdbReviews(tmdbId),
+                ]);
+                setTmdbCast(cast);
+                setTmdbReviews(reviews);
+            } catch (e) {
+                console.error("TMDB fetch failed", e);
+            } finally {
+                setTmdbLoading(false);
+            }
+        };
+        hydrateTmdb();
+    }, [movie]);
+
+
     const handleShowtimeClick = () => {
         if (!selectedTime) {
-            alert('Please select a showtime first');
+            alert("Please select a showtime first");
             return;
         }
 
-        navigate('/seat-booking', {
+        navigate("/seat-booking", {
             state: {
                 movie,
                 date: selectedDate,
                 cinema: selectedCinema,
-                time: selectedTime
-            }
+                time: selectedTime,
+            },
         });
     };
 
-    // Movie data
-    const movie = {
-        id: 1,
-        title: "Quantum Nexus",
-        tagline: "Reality is just the beginning",
-        description: "When reality itself becomes unstable, a quantum physicist must navigate parallel dimensions to save humanity from an interdimensional collapse that threatens all existence. Dr. Sarah Chen discovers that her groundbreaking research has torn holes in the fabric of spacetime, allowing dangerous entities from alternate realities to seep into our world.",
-        fullDescription: "As Sarah races against time to repair the quantum rifts, she must confront versions of herself from different timelines, each with their own agenda. With the help of a mysterious interdimensional traveler and her brilliant research team, she embarks on a mind-bending journey through parallel worlds where the laws of physics bend to the will of consciousness itself. The fate of not just our reality, but all possible realities, hangs in the balance.",
-        poster: "https://images.unsplash.com/photo-1460881680858-30d872d5b530?w=400&h=600&fit=crop",
-        backdrop: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=1920&h=1080&fit=crop",
-        rating: 8.7,
-        duration: 142,
-        releaseDate: "2025-08-01",
-        genre: ["Sci-Fi", "Thriller", "Action"],
-        director: "Alex Rodriguez",
-        writers: ["Sarah Kim", "Michael Chen"],
-        language: "English",
-        country: "USA",
-        budget: "$85M",
-        boxOffice: "$324M",
-        certification: "PG-13"
-    };
-
-    const cast = [
-        { name: "Emma Stone", character: "Dr. Sarah Chen", image: "https://images.unsplash.com/photo-1494790108755-2616c047938e?w=200&h=200&fit=crop&crop=face" },
-        { name: "Oscar Isaac", character: "Marcus Vale", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face" },
-        { name: "Lupita Nyong'o", character: "Dr. Zara Okafor", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face" },
-        { name: "Dev Patel", character: "Kai Nakamura", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" },
-        { name: "Tilda Swinton", character: "The Architect", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face" },
-        { name: "John Boyega", character: "Agent Torres", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face" }
-    ];
-
-    const showtimes = {
-        "2025-08-06": {
-            "Grand Cinema Downtown": ["10:30 AM", "1:45 PM", "4:15 PM", "7:30 PM", "10:45 PM"],
-            "Multiplex North": ["11:00 AM", "2:15 PM", "5:30 PM", "8:45 PM"],
-            "Cinema Park West": ["12:00 PM", "3:30 PM", "6:45 PM", "9:15 PM"]
-        },
-        "2025-08-07": {
-            "Grand Cinema Downtown": ["10:30 AM", "1:45 PM", "4:15 PM", "7:30 PM", "10:45 PM"],
-            "Multiplex North": ["11:00 AM", "2:15 PM", "5:30 PM", "8:45 PM"],
-            "Cinema Park West": ["12:00 PM", "3:30 PM", "6:45 PM", "9:15 PM"]
-        },
-        "2025-08-08": {
-            "Grand Cinema Downtown": ["10:30 AM", "1:45 PM", "4:15 PM", "7:30 PM", "10:45 PM"],
-            "Multiplex North": ["11:00 AM", "2:15 PM", "5:30 PM", "8:45 PM"],
-            "Cinema Park West": ["12:00 PM", "3:30 PM", "6:45 PM", "9:15 PM"]
-        }
-    };
-
-    const reviews = [
-        { user: "MovieBuff2025", rating: 9, comment: "Mind-bending masterpiece! The visual effects are absolutely stunning and the story keeps you guessing until the very end." },
-        { user: "CinemaLover", rating: 8, comment: "Emma Stone delivers an incredible performance. The quantum physics concepts are explained beautifully without dumbing down." },
-        { user: "SciFiFan", rating: 9, comment: "Best sci-fi film of the year! The parallel dimension scenes are breathtaking and the ending is perfect." }
-    ];
-
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
+        return date.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
         });
     };
 
     const formatDuration = (minutes) => {
+        if (!minutes && minutes !== 0) return "—";
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return `${hours}h ${mins}m`;
     };
+
+    const getYouTubeId = (url) => {
+        if (!url) return null;
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+            if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+            return null;
+        } catch {
+            return null;
+        }
+    };
+
+    const groupedShowtimes = showtimesData.reduce((acc, st) => {
+        const date = new Date(st.date).toISOString().split("T")[0];
+        if (!acc[date]) acc[date] = {};
+        const name = st.theater?.name ?? "Unknown Theater";
+        if (!acc[date][name]) acc[date][name] = [];
+        acc[date][name].push(st.startTime);
+        return acc;
+    }, {});
+
+    const showtimes = groupedShowtimes;
+
+    if (!movie) {
+        return (
+            <div className="text-white flex justify-center items-center min-h-screen">
+                <p className="text-lg">Loading movie information...</p>
+            </div>
+        );
+    }
+
+    const heroUrl = movie.backdropUrl || movie.posterUrl || "";
+    const ytId = getYouTubeId(movie.trailerUrl);
 
     return (
         <>
@@ -117,7 +144,7 @@ const MoviePage = () => {
             <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10"></div>
                 <img
-                    src={movie.backdrop}
+                    src={heroUrl}
                     alt={movie.title}
                     className="w-full h-96 md:h-[600px] object-cover"
                 />
@@ -127,55 +154,68 @@ const MoviePage = () => {
                         <div className="flex flex-col lg:flex-row items-start lg:items-end gap-8">
                             <div className="flex-shrink-0">
                                 <img
-                                    src={movie.poster}
+                                    src={movie.posterUrl}
                                     alt={movie.title}
                                     className="w-48 md:w-64 rounded-xl shadow-2xl"
                                 />
                             </div>
 
                             <div className="flex-1">
+                                {/* Genres & Cert (cert optional) */}
                                 <div className="flex flex-wrap items-center gap-4 mb-4">
-                                    {movie.genre.map((g, idx) => (
+                                    {(movie.genre ?? []).map((g, idx) => (
                                         <span key={idx} className="px-3 py-1 rounded-full text-sm font-medium" style={{ backgroundColor: '#EF233C' }}>
                       {g}
                     </span>
                                     ))}
-                                    <span className="px-3 py-1 rounded-full text-sm font-medium border border-gray-600">
-                    {movie.certification}
-                  </span>
                                 </div>
 
                                 <h1 className="text-4xl md:text-6xl font-bold mb-2">{movie.title}</h1>
-                                <p className="text-xl text-gray-300 mb-4 italic">{movie.tagline}</p>
 
                                 <div className="flex flex-wrap items-center gap-6 mb-6 text-gray-300">
-                                    <div className="flex items-center">
-                                        <Star className="w-5 h-5 mr-2" style={{ color: '#FFD700' }} fill="currentColor" />
-                                        <span className="text-xl font-semibold text-white">{movie.rating}</span>
-                                        <span className="ml-1">/10</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Clock className="w-5 h-5 mr-2" />
-                                        <span>{formatDuration(movie.duration)}</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <Calendar className="w-5 h-5 mr-2" />
-                                        <span>{new Date(movie.releaseDate).getFullYear()}</span>
-                                    </div>
+                                    {!!movie.rating && (
+                                        <div className="flex items-center">
+                                            <Star className="w-5 h-5 mr-2" style={{ color: '#FFD700' }} fill="currentColor" />
+                                            <span className="text-xl font-semibold text-white">{movie.rating}</span>
+                                            <span className="ml-1">/10</span>
+                                        </div>
+                                    )}
+
+                                    {!!movie.duration && (
+                                        <div className="flex items-center">
+                                            <Clock className="w-5 h-5 mr-2" />
+                                            <span>{formatDuration(movie.duration)}</span>
+                                        </div>
+                                    )}
+
+                                    {!!movie.releaseDate && (
+                                        <div className="flex items-center">
+                                            <Calendar className="w-5 h-5 mr-2" />
+                                            <span>{new Date(movie.releaseDate).getFullYear()}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4">
-                                    <button className="px-8 py-4 rounded-lg font-semibold text-black text-lg hover:scale-105 transform transition-all duration-200 shadow-lg flex items-center justify-center" style={{ backgroundColor: '#FFD700' }}>
+                                    <a
+                                        href="#showtimes"
+                                        className="px-8 py-4 rounded-lg font-semibold text-black text-lg hover:scale-105 transform transition-all duration-200 shadow-lg flex items-center justify-center"
+                                        style={{ backgroundColor: '#FFD700' }}
+                                    >
                                         <Film className="w-5 h-5 mr-2" />
                                         Book Tickets
-                                    </button>
-                                    <button
-                                        onClick={() => setIsTrailerPlaying(true)}
-                                        className="px-8 py-4 rounded-lg font-semibold text-white text-lg border-2 border-white hover:bg-white hover:text-black transition-all duration-200 flex items-center justify-center"
-                                    >
-                                        <Play className="w-5 h-5 mr-2" />
-                                        Watch Trailer
-                                    </button>
+                                    </a>
+
+                                    {ytId && (
+                                        <button
+                                            onClick={() => setIsTrailerPlaying(true)}
+                                            className="px-8 py-4 rounded-lg font-semibold text-white text-lg border-2 border-white hover:bg-white hover:text-black transition-all duration-200 flex items-center justify-center"
+                                        >
+                                            <Play className="w-5 h-5 mr-2" />
+                                            Watch Trailer
+                                        </button>
+                                    )}
+
                                     <button
                                         onClick={() => setIsFavorited(!isFavorited)}
                                         className="p-4 rounded-lg border-2 border-gray-600 hover:border-red-500 transition-colors"
@@ -200,95 +240,157 @@ const MoviePage = () => {
                         {/* Plot */}
                         <section>
                             <h2 className="text-2xl font-bold mb-4">Plot</h2>
-                            <p className="text-gray-300 leading-relaxed mb-4">{movie.description}</p>
-                            <p className="text-gray-300 leading-relaxed">{movie.fullDescription}</p>
+                            <p className="text-gray-300 leading-relaxed">{movie.description || "No description available."}</p>
                         </section>
 
-                        {/* Cast */}
+                        {/* Cast (static demo as before) */}
                         <section>
                             <h2 className="text-2xl font-bold mb-6">Cast</h2>
-                            <div className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${!showFullCast ? 'max-h-96 overflow-hidden' : ''}`}>
-                                {cast.slice(0, showFullCast ? cast.length : 6).map((actor, idx) => (
-                                    <div key={idx} className="text-center">
-                                        <img
-                                            src={actor.image}
-                                            alt={actor.name}
-                                            className="w-24 h-24 rounded-full mx-auto mb-3 object-cover"
-                                        />
-                                        <h3 className="font-semibold text-white">{actor.name}</h3>
-                                        <p className="text-sm text-gray-400">{actor.character}</p>
+                            {tmdbLoading && <p className="text-gray-400">Loading cast…</p>}
+
+                            {!tmdbLoading && (
+                                <>
+                                    <div
+                                        className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${!showFullCast ? 'max-h-96 overflow-hidden' : ''}`}>
+                                        {(tmdbCast.length ? tmdbCast : []).slice(0, showFullCast ? tmdbCast.length : 6).map(actor => (
+                                            <div key={actor.id} className="text-center">
+                                                {actor.imageUrl ? (
+                                                    <img
+                                                        src={actor.imageUrl}
+                                                        alt={actor.name}
+                                                        className="w-24 h-24 rounded-full mx-auto mb-3 object-cover"
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        className="w-24 h-24 rounded-full mx-auto mb-3 bg-gray-700 flex items-center justify-center">
+                                                        <span
+                                                            className="text-white text-lg">{actor.name?.[0] ?? "?"}</span>
+                                                    </div>
+                                                )}
+                                                <h3 className="font-semibold text-white">{actor.name}</h3>
+                                                {actor.character &&
+                                                    <p className="text-sm text-gray-400">{actor.character}</p>}
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                            {cast.length > 6 && (
-                                <button
-                                    onClick={() => setShowFullCast(!showFullCast)}
-                                    className="mt-6 flex items-center mx-auto px-6 py-3 rounded-lg border border-gray-600 hover:border-gray-400 transition-colors"
-                                >
-                                    {showFullCast ? (
-                                        <>Show Less <ChevronUp className="w-4 h-4 ml-2" /></>
-                                    ) : (
-                                        <>Show All Cast <ChevronDown className="w-4 h-4 ml-2" /></>
+
+                                    {tmdbCast.length > 6 && (
+                                        <button
+                                            onClick={() => setShowFullCast(!showFullCast)}
+                                            className="mt-6 flex items-center mx-auto px-6 py-3 rounded-lg border border-gray-600 hover:border-gray-400 transition-colors"
+                                        >
+                                            {showFullCast ? (
+                                                <>Show Less <ChevronUp className="w-4 h-4 ml-2"/></>
+                                            ) : (
+                                                <>Show All Cast <ChevronDown className="w-4 h-4 ml-2"/></>
+                                            )}
+                                        </button>
                                     )}
-                                </button>
+
+                                    {!tmdbCast.length && <p className="text-gray-400">No cast found.</p>}
+                                </>
                             )}
                         </section>
 
-                        {/* Reviews */}
+
+                        {/* Reviews (static demo) */}
                         <section>
                             <h2 className="text-2xl font-bold mb-6">User Reviews</h2>
-                            <div className="space-y-6">
-                                {reviews.map((review, idx) => (
-                                    <div key={idx} className="p-6 rounded-xl" style={{ backgroundColor: '#1E1E2F' }}>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="font-semibold">{review.user}</h3>
-                                            <div className="flex items-center">
-                                                <Star className="w-4 h-4 mr-1" style={{ color: '#FFD700' }} fill="currentColor" />
-                                                <span>{review.rating}/10</span>
+                            {tmdbLoading && <p className="text-gray-400">Loading reviews…</p>}
+
+                            {!tmdbLoading && (tmdbReviews.length ? (
+                                <div className="space-y-6">
+                                    {tmdbReviews.map(r => (
+                                        <div key={r.id} className="p-6 rounded-xl" style={{backgroundColor: '#1E1E2F'}}>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h3 className="font-semibold">{r.author || "Anonymous"}</h3>
+                                                    {r.createdAt && (
+                                                        <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                                    )}
+                                                </div>
+                                                {r.rating !== null && r.rating !== undefined && (
+                                                    <div className="flex items-center">
+                                                        <Star className="w-4 h-4 mr-1" style={{color: '#FFD700'}}
+                                                              fill="currentColor"/>
+                                                        <span>{r.rating}/10</span>
+                                                    </div>
+                                                )}
                                             </div>
+                                            <p className="text-gray-300 whitespace-pre-wrap">
+                                                {r.content.length > 600 ? r.content.slice(0, 600) + "…" : r.content}
+                                            </p>
+                                            {r.url && (
+                                                <a
+                                                    href={r.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-block mt-3 text-sm text-yellow-400 hover:underline"
+                                                >
+                                                    Read full review on TMDB
+                                                </a>
+                                            )}
                                         </div>
-                                        <p className="text-gray-300">{review.comment}</p>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-400">No reviews found.</p>
+                            ))}
                         </section>
+
                     </div>
 
                     {/* Right Column - Booking & Info */}
                     <div className="space-y-8">
-                        {/* Movie Info */}
-                        <div className="p-6 rounded-xl" style={{ backgroundColor: '#1E1E2F' }}>
+                        {/* Movie Info (only existing fields) */}
+                        <div className="p-6 rounded-xl" style={{backgroundColor: '#1E1E2F'}}>
                             <h3 className="text-xl font-bold mb-6">Movie Information</h3>
                             <div className="space-y-4">
-                                <div>
-                                    <span className="text-gray-400">Director:</span>
-                                    <span className="ml-2 text-white">{movie.director}</span>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400">Writers:</span>
-                                    <span className="ml-2 text-white">{movie.writers.join(', ')}</span>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400">Language:</span>
-                                    <span className="ml-2 text-white">{movie.language}</span>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400">Country:</span>
-                                    <span className="ml-2 text-white">{movie.country}</span>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400">Budget:</span>
-                                    <span className="ml-2 text-white">{movie.budget}</span>
-                                </div>
-                                <div>
-                                    <span className="text-gray-400">Box Office:</span>
-                                    <span className="ml-2 text-white">{movie.boxOffice}</span>
-                                </div>
+                                {(movie.genre?.length > 0) && (
+                                    <div>
+                                        <span className="text-gray-400">Genres:</span>
+                                        <span className="ml-2 text-white">{movie.genre.join(', ')}</span>
+                                    </div>
+                                )}
+                                {movie.language && (
+                                    <div>
+                                        <span className="text-gray-400">Language:</span>
+                                        <span className="ml-2 text-white">{movie.language}</span>
+                                    </div>
+                                )}
+                                {!!movie.duration && (
+                                    <div>
+                                        <span className="text-gray-400">Duration:</span>
+                                        <span className="ml-2 text-white">{formatDuration(movie.duration)}</span>
+                                    </div>
+                                )}
+                                {!!movie.releaseDate && (
+                                    <div>
+                                        <span className="text-gray-400">Release:</span>
+                                        <span className="ml-2 text-white">
+                      {new Date(movie.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                                    </div>
+                                )}
+                                {!!movie.rating && (
+                                    <div>
+                                        <span className="text-gray-400">Rating:</span>
+                                        <span className="ml-2 text-white">{movie.rating}/10</span>
+                                    </div>
+                                )}
+                                {movie.createdAt && (
+                                    <div>
+                                        <span className="text-gray-400">Added:</span>
+                                        <span className="ml-2 text-white">
+                      {new Date(movie.createdAt).toLocaleDateString('en-US')}
+                    </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Showtimes */}
-                        <div className="p-6 rounded-xl" style={{backgroundColor: '#1E1E2F'}}>
+                        <div id="showtimes" className="p-6 rounded-xl" style={{ backgroundColor: '#1E1E2F' }}>
                             <h3 className="text-xl font-bold mb-6">Showtimes</h3>
 
                             {/* Date Selection */}
@@ -298,7 +400,7 @@ const MoviePage = () => {
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
                                     className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{backgroundColor: '#121212'}}
+                                    style={{ backgroundColor: '#121212' }}
                                 >
                                     {Object.keys(showtimes).map(date => (
                                         <option key={date} value={date}>{formatDate(date)}</option>
@@ -313,7 +415,7 @@ const MoviePage = () => {
                                     value={selectedCinema}
                                     onChange={(e) => setSelectedCinema(e.target.value)}
                                     className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{backgroundColor: '#121212'}}
+                                    style={{ backgroundColor: '#121212' }}
                                 >
                                     {Object.keys(showtimes[selectedDate] || {}).map(cinema => (
                                         <option key={cinema} value={cinema}>{cinema}</option>
@@ -357,27 +459,29 @@ const MoviePage = () => {
                 </div>
             </div>
 
-                {/* Trailer Modal */}
-                {isTrailerPlaying && (
-                    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-                        <div className="relative w-full max-w-4xl aspect-video">
-                            <button
-                                onClick={() => setIsTrailerPlaying(false)}
-                                className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
-                            >
-                                <X size={32}/>
-                            </button>
-                            <div className="w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
-                                <div className="text-center">
-                                    <Play className="w-16 h-16 mx-auto mb-4 text-gray-400"/>
-                                    <p className="text-gray-400">Trailer would play here</p>
-                                </div>
-                            </div>
-                        </div>
+            {/* Trailer Modal */}
+            {isTrailerPlaying && ytId && (
+                <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+                    <div className="relative w-full max-w-4xl aspect-video">
+                        <button
+                            onClick={() => setIsTrailerPlaying(false)}
+                            className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
+                        >
+                            <X size={32} />
+                        </button>
+                        <iframe
+                            className="w-full h-full rounded-lg"
+                            src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
+                            title="Trailer"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
                     </div>
-                )}
+                </div>
+            )}
         </>
     );
 };
+
 
 export default MoviePage;

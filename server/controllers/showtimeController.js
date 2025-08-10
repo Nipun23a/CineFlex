@@ -96,3 +96,24 @@ export const deleteShowtime = async (req, res) => {
         res.status(500).json({ message: 'Failed to delete showtime', error: err.message });
     }
 };
+
+// Get the Showtime based on the movie
+export const getShowtimesByMovie = async (req, res) => {
+    try {
+        const { movieId } = req.params;
+
+        const showtimes = await Showtime.find({ movie: movieId })
+            .populate('movie')
+            .populate('theater');
+
+        if (!showtimes || showtimes.length === 0) {
+            return res.status(404).json({ message: 'No showtimes found for this movie.' });
+        }
+
+        console.log('Showtimes for movie:', showtimes);
+        res.status(200).json(showtimes);
+    } catch (error) {
+        console.error('Error fetching showtimes by movie:', error);
+        res.status(500).json({ message: 'Failed to fetch showtimes', error: error.message });
+    }
+};

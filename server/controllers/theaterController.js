@@ -68,3 +68,5 @@ export const deleteTheater = async (req, res) => {
         res.status(500).json({ message: 'Failed to delete theater', error: err.message });
     }
 };
+
+// G

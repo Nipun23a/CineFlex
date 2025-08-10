@@ -5,7 +5,7 @@ import {
     createShowtime,
     deleteShowtime,
     getAllShowtimes,
-    getShowtimeById,
+    getShowtimeById, getShowtimesByMovie,
     updateShowtime
 } from "../controllers/showtimeController.js";
 
@@ -13,6 +13,7 @@ const router = express.Router();
 
 router.post('/',auth,isAdmin,createShowtime);
 router.get('/',getAllShowtimes);
+router.get('/movies/:movieId',getShowtimesByMovie);
 router.get('/:id',getShowtimeById);
 router.put('/:id',auth,isAdmin,updateShowtime);
 router.delete('/:id',auth,isAdmin,deleteShowtime);

@@ -13,7 +13,7 @@ const MovieCard = ({movie,isListView = false}) => {
     };
 
     const handleNavigate = () => {
-        navigate(`/movies/${movie.id}`); // 👈 You can change this to match your route pattern
+        navigate(`/movies/${movie._id}`); // 👈 You can change this to match your route pattern
     };
 
     return (
