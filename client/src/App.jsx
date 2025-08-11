@@ -15,6 +15,7 @@ import PaymentPage from "./pages/PaymentPage.jsx";
 import {loadStripe} from "@stripe/stripe-js";
 import {Elements} from "@stripe/react-stripe-js";
 import BookingsPage from "./pages/BookingPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -56,6 +57,10 @@ function App() {
                         <Route
                             path="/bookings"
                             element={<MainLayout><BookingsPage/></MainLayout>}
+                        />
+                        <Route
+                            path="/profile"
+                            element={<MainLayout><ProfilePage/></MainLayout>}
                         />
                         <Route
                             path="/payment"
