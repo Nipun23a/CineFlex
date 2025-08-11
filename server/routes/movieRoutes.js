@@ -2,6 +2,7 @@ import express from "express";
 import {auth} from "../middleware/auth.js";
 import {isAdmin} from "../middleware/isAdmin.js";
 import {createMovie, deleteMovie, getAllMovies, getMovieById, updateMovie} from "../controllers/movieController.js";
+import {confirmStripeAndCreateBooking, createStripePaymentIntent} from "../controllers/bookingController.js";
 
 const router = express.Router();
 

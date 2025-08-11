@@ -19,6 +19,7 @@ const SeatBookingPage = () => {
     const [bookedCodes, setBookedCodes] = useState(new Set());
     const [loadingBooked, setLoadingBooked] = useState(false);
 
+
     // Redirect if no booking info
     useEffect(() => {
         if (!movie || !date || !cinema || !time) {
@@ -107,6 +108,7 @@ const SeatBookingPage = () => {
     const handleProceedToPayment = () => {
         navigate('/payment', {
             state: {
+                showtimeId,
                 movie,
                 date,
                 cinema,

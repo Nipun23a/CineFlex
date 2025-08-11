@@ -159,7 +159,19 @@ export const getBookingByUser = async (userId) => {
 
 // Get all the booked sheet from
 export const getAllSeatForShowTime = async (showTimeId) =>{
-    return axiosInstance.get(`/bookings/showtimes/${showTimeId}/booked-seats?includePending=true`);
+    return await axiosInstance.get(`/bookings/showtimes/${showTimeId}/booked-seats?includePending=true`);
 }
+
+// Create Stripe Payment API
+export const createStripeIntent = async (payload) =>{
+    return await axiosInstance.post('/bookings/payment/create-intent',payload);
+}
+
+export const confirmStripeBooking = async (paymentIntentId,extras={})=>{
+    return await axiosInstance.post('/bookings/payment/confirm',{
+        paymentIntentId,
+        ...extras,
+    });
+};
 
 
