@@ -11,6 +11,7 @@ import LoginPage from "./pages/auth/LoginPage.jsx";
 import RegisterPage from "./pages/auth/RegisterPage.jsx";
 import {AuthProvider} from "./context/AuthContext.jsx";
 import SeatBookingPage from "./pages/SeatBookingPage.jsx";
+import PaymentPage from "./pages/PaymentPage.jsx";
 
 function App() {
 
@@ -45,6 +46,10 @@ function App() {
                     <Route
                         path="/seat-booking"
                         element={<MainLayout><SeatBookingPage /></MainLayout>}
+                    />
+                    <Route
+                        path="/payment"
+                        element={<MainLayout><PaymentPage/></MainLayout>}
                     />
                     <Route
                         path='/login'

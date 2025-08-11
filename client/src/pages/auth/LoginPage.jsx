@@ -2,17 +2,24 @@
 import { useState } from "react";
 import { Eye, EyeOff, User, Lock, ChevronLeft } from "lucide-react";
 import {loginUser} from "../../utils/api.js";
-import {useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import {useAuth} from "../../context/AuthContext.jsx";
+
 
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [isSubmitting,setIsSubmitting] = useState(false);
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get("redirect") || "/";
+
+    const safeRedirect = (path) => (path && path.startsWith("/") ? path: "/")
 
     const {login} = useAuth();
 
@@ -23,25 +30,34 @@ const LoginPage = () => {
             setErrorMessage("Please fill in all fields");
             return;
         }
-
         if (!/^\S+@\S+\.\S+$/.test(email)) {
             setErrorMessage("Please enter a valid email address");
             return;
         }
 
-        console.log("Login attempt with:", { email, password, rememberMe });
         try {
-            const response = await loginUser({email,password});
-            const {token,user} = response.data;
-            login(user,token,rememberMe);
-            if (user.role === 'admin'){
-                navigate('/admin');
-            }else {
-                navigate('/');
-            }
+            setIsSubmitting(true);
             setErrorMessage("");
-        }catch (error){
+
+            const response = await loginUser({ email, password });
+            const { token, user } = response.data;
+
+            // Persist in your auth context (and optionally localStorage if rememberMe)
+            login(user, token, rememberMe);
+
+            // Decide where to go next:
+            // - If user is admin, default to /admin unless a redirect is provided.
+            // - If user is not admin, use redirect if provided, else go home.
+            const next =
+                user.role === "admin"
+                    ? safeRedirect(redirectParam || "/admin")
+                    : safeRedirect(redirectParam || "/");
+
+            navigate(next, { replace: true });
+        } catch (error) {
             setErrorMessage(error.response?.data?.message || "Login failed");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

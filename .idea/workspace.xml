@@ -4,18 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="TMDB Connected With Frontend">
+    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Updated TIll Seat Booking">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/MovieDetailPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/MovieDetailPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/src/pages/SeatBookingPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/SeatBookingPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/utils/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/utils/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/controllers/bookingController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/bookingController.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/models/Booking.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/Booking.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/server/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/server/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/routes/bookingRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes/bookingRoutes.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/seeders/bookingSeeder.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/seeders/bookingSeeder.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/showtimeController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/showtimeController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/models/ShowTime.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/ShowTime.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +21,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="JavaScript File" />
+        <option value="JSX File" />
       </list>
     </option>
   </component>
@@ -73,7 +69,7 @@
       <workItem from="1754555124714" duration="4846000" />
       <workItem from="1754635366737" duration="6742000" />
       <workItem from="1754836173047" duration="7088000" />
-      <workItem from="1754846272038" duration="3397000" />
+      <workItem from="1754846272038" duration="10338000" />
     </task>
     <task id="LOCAL-00001" summary="Backend and Frontend Connected">
       <option name="closed" value="true" />
@@ -107,7 +103,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754838437870</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Updated TIll Seat Booking">
+      <option name="closed" value="true" />
+      <created>1754849771748</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1754849771748</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -129,7 +133,8 @@
     <MESSAGE value="All Movies Page, and Movie Card Updated for backend api's created" />
     <MESSAGE value="All The Backed API's Added for Frontend" />
     <MESSAGE value="TMDB Connected With Frontend" />
-    <option name="LAST_COMMIT_MESSAGE" value="TMDB Connected With Frontend" />
+    <MESSAGE value="Updated TIll Seat Booking" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated TIll Seat Booking" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

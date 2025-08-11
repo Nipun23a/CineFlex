@@ -5,7 +5,7 @@ import Theater from '../models/Theater.js';
 
 export const createShowtime = async (req, res) => {
     try {
-        const { movie, theater, screen, date, startTime, totalSeats, price } = req.body;
+        const { movie, theater, date, startTime, totalSeats, price } = req.body;
 
         // Check if movie exists
         const movieExists = await Movie.findById(movie);

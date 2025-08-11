@@ -162,40 +162,40 @@ const SeatBookingPage = () => {
                                 <div className="text-gray-400 font-medium mt-2">SCREEN</div>
                             </div>
 
-                            {loadingBooked && (
+                            {loadingBooked ? (
                                 <div className="text-center text-gray-400 mb-4">Loading booked seats…</div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {seats.map((row, rowIndex) => (
+                                        <div key={rowIndex} className="flex items-center gap-4">
+                                            <div className="w-8 text-center font-medium text-gray-400">
+                                                {getSeatLabel(rowIndex, 0)}
+                                            </div>
+
+                                            <div className="flex gap-2 flex-wrap">
+                                                {row.map((seat, colIndex) => (
+                                                    <button
+                                                        key={`${rowIndex}-${colIndex}`}
+                                                        onClick={() => handleSeatClick(rowIndex, colIndex)}
+                                                        disabled={seat.status === 'booked'}
+                                                        className={`
+                w-10 h-10 flex items-center justify-center rounded
+                border-2 transition-colors
+                ${getSeatColor(seat.status, seat.isSelected)}
+              `}
+                                                    >
+                                                        {colIndex + 1}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="w-8 text-center font-medium text-gray-400">
+                                                {getSeatLabel(rowIndex, 0)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
-
-                            <div className="space-y-4">
-                                {seats.map((row, rowIndex) => (
-                                    <div key={rowIndex} className="flex items-center gap-4">
-                                        <div className="w-8 text-center font-medium text-gray-400">
-                                            {getSeatLabel(rowIndex, 0)}
-                                        </div>
-
-                                        <div className="flex gap-2 flex-wrap">
-                                            {row.map((seat, colIndex) => (
-                                                <button
-                                                    key={`${rowIndex}-${colIndex}`}
-                                                    onClick={() => handleSeatClick(rowIndex, colIndex)}
-                                                    disabled={seat.status === 'booked'}
-                                                    className={`
-                            w-10 h-10 flex items-center justify-center rounded
-                            border-2 transition-colors
-                            ${getSeatColor(seat.status, seat.isSelected)}
-                          `}
-                                                >
-                                                    {colIndex + 1}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        <div className="w-8 text-center font-medium text-gray-400">
-                                            {getSeatLabel(rowIndex, 0)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
 
                             <div className="mt-10 flex flex-wrap justify-center gap-6">
                                 <div className="flex items-center gap-2">
