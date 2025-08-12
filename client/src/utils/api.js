@@ -44,7 +44,7 @@ export const getAllUsers = async () => {
 
 // Update User Information
 export const updateUser = async (userData) => {
-    return await axiosInstance.post('/user/update',userData);
+    return await axiosInstance.put('/user/update',userData);
 }
 
 // Get User ID
@@ -156,6 +156,13 @@ export const getBookingById = async (id) => {
 export const getBookingByUser = async (userId) => {
     return await axiosInstance.get(`/bookings/user/${userId}`)
 }
+export const PAYMENT_STATUSES = ["pending", "paid", "failed"];
+export const updatePaymentStatusApi = async (bookingId, status) => {
+    if (!PAYMENT_STATUSES.includes(status)) {
+        throw new Error("Invalid payment status");
+    }
+    return await axiosInstance.put(`/bookings/update-payment-status/${bookingId}`, { status });
+};
 
 // Get all the booked sheet from
 export const getAllSeatForShowTime = async (showTimeId) =>{

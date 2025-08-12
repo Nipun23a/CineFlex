@@ -8,6 +8,6 @@ const router = express.Router();
 router.post('/create-admin',auth,isAdmin,createAdmin);
 router.get('/',auth,isAdmin,getAllUsers);
 router.put('/update',auth,updateUserInfo);
-router.put('/:id',auth,getUserById);
+router.get('/:id',auth,getUserById);
 
 export default router;

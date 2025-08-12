@@ -4,10 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Static Profile Page Added">
+    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Static Admin Dashboard Created">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/client/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/client/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/context/AuthContext.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/context/AuthContext.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/BookingPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/BookingPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/ProfilePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/ProfilePage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/utils/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/utils/api.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/authController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/authController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/bookingController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/bookingController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/showtimeController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/showtimeController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/controllers/userController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/userController.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/routes/userRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes/userRoutes.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,7 +77,7 @@
       <workItem from="1754635366737" duration="6742000" />
       <workItem from="1754836173047" duration="7088000" />
       <workItem from="1754846272038" duration="26311000" />
-      <workItem from="1754977326072" duration="4775000" />
+      <workItem from="1754977326072" duration="17210000" />
     </task>
     <task id="LOCAL-00001" summary="Backend and Frontend Connected">
       <option name="closed" value="true" />
@@ -141,7 +151,15 @@
       <option name="project" value="LOCAL" />
       <updated>1754927355149</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Static Admin Dashboard Created">
+      <option name="closed" value="true" />
+      <created>1754993481434</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1754993481434</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -167,7 +185,8 @@
     <MESSAGE value="Stripe Payment Added with Booking" />
     <MESSAGE value="Static Booking Page Added" />
     <MESSAGE value="Static Profile Page Added" />
-    <option name="LAST_COMMIT_MESSAGE" value="Static Profile Page Added" />
+    <MESSAGE value="Static Admin Dashboard Created" />
+    <option name="LAST_COMMIT_MESSAGE" value="Static Admin Dashboard Created" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -180,6 +199,18 @@
           <url>file://$PROJECT_DIR$/client/src/utils/api.js</url>
           <line>68</line>
           <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/client/src/pages/BookingPage.jsx</url>
+          <line>44</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/client/src/pages/ProfilePage.jsx</url>
+          <line>41</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

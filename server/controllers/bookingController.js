@@ -5,7 +5,7 @@ import Theater from '../models/Theater.js';
 import mongoose from "mongoose";
 
 
-console.log(process.env.STRIPE_SECRET_KEY);
+
 const parseSeatString = (s) => {
     const m = String(s).toUpperCase().match(/^([A-Z]+)\s*-?\s*(\d+)$/);
     return m ? { row: m[1], number: Number(m[2]) } : null;
@@ -258,95 +258,6 @@ export const confirmStripeAndCreateBooking = async (req, res) => {
         return res.status(500).json({ message: 'Failed to finalize booking' });
     }
 };
-
-
-
-
-
-/*export const createBookingStripe = async (req, res) => {
-    try {
-        const { userId, showtimeId, seats } = req.body;
-
-        const showtime = await Showtime.findById(showtimeId).populate('movie theater');
-        if (!showtime) return res.status(404).json({ message: 'Showtime not found' });
-
-        // Check if seats are available
-        const isSeatTaken = seats.some(seat => showtime.bookedSeats.includes(seat));
-        if (isSeatTaken) return res.status(400).json({ message: 'Some selected seats are already booked' });
-
-        const totalPrice = seats.length * showtime.price;
-
-        // Create Stripe Checkout Session
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: [{
-                price_data: {
-                    currency: 'usd',
-                    product_data: {
-                        name: `${showtime.movie.title} - ${showtime.theater.name}`,
-                        description: `Seats: ${seats.join(', ')}`,
-                    },
-                    unit_amount: showtime.price * 100, // in cents
-                },
-                quantity: seats.length,
-            }],
-            mode: 'payment',
-            success_url: `${process.env.CLIENT_URL}/booking-success`,
-            cancel_url: `${process.env.CLIENT_URL}/booking-failure`,
-        });
-
-        // Create Booking with 'pending' payment status
-        const booking = new Booking({
-            user: userId,
-            showtime: showtime._id,
-            theater: showtime.theater._id,
-            seats,
-            totalPrice,
-            paymentStatus: 'pending',
-        });
-
-        await booking.save();
-
-        res.status(200).json({ sessionUrl: session.url, bookingId: booking._id });
-    } catch (err) {
-        res.status(500).json({ message: 'Failed to create booking', error: err.message });
-    }
-};
-
-export const handleStripeWebhook = async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-
-    try {
-        const event = stripe.webhooks.constructEvent(
-            req.rawBody,
-            sig,
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
-
-        if (event.type === 'checkout.session.completed') {
-            const session = event.data.object;
-
-            // Assume metadata includes bookingId
-            const bookingId = session.metadata?.bookingId;
-            if (bookingId) {
-                await Booking.findByIdAndUpdate(bookingId, {
-                    paymentStatus: 'paid'
-                });
-
-                // Optional: Add booked seats to Showtime
-                const booking = await Booking.findById(bookingId);
-                await Showtime.findByIdAndUpdate(booking.showtime, {
-                    $push: { bookedSeats: { $each: booking.seats } }
-                });
-            }
-        }
-
-        res.status(200).send('Webhook received');
-    } catch (err) {
-        res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-};*/
-
 export const getAllBookings = async (req, res) => {
     try {
         const bookings = await Booking.find()
@@ -363,31 +274,45 @@ export const getAllBookings = async (req, res) => {
 
 export const getBookingsByUserId = async (req, res) => {
     try {
-        const userId = req.params.id;
-        const bookings = await Booking.find({user:userId})
-        .populate('showtime').populate('theater').sort({createdAt: -1});
+        const userId = req.params.userId; // <- FIX
+        const bookings = await Booking.find({ user: userId })
+            .populate({
+                path: "showtime",
+                populate: [
+                    { path: "movie", select: "title posterUrl genre duration language rating" },
+                    { path: "theater", select: "name location" },
+                ],
+            })
+            .populate({ path: "theater", select: "name location" }) // (booking also stores theater)
+            .sort({ createdAt: -1 });
+
         return res.status(200).json(bookings);
-    }catch (error){
-        res.status(500).json({ message: 'Failed to get bookings', error: error.message });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to get bookings", error: error.message });
     }
-}
+};
 
 export const getBookingById = async (req, res) => {
     try {
         const bookingId = req.params.id;
-
         const booking = await Booking.findById(bookingId)
-            .populate('user', 'name email')
-            .populate('showtime')
-            .populate('theater');
+            .populate("user", "name email")
+            .populate({
+                path: "showtime",
+                populate: [
+                    { path: "movie", select: "title posterUrl genre duration language rating" },
+                    { path: "theater", select: "name location" },
+                ],
+            })
+            .populate({ path: "theater", select: "name location" });
 
-        if (!booking) return res.status(404).json({ message: 'Booking not found' });
-
+        if (!booking) return res.status(404).json({ message: "Booking not found" });
         res.status(200).json(booking);
     } catch (error) {
-        res.status(500).json({ message: 'Failed to get booking', error: error.message });
+        res.status(500).json({ message: "Failed to get booking", error: error.message });
     }
 };
+
 
 export const updatePaymentStatus = async (req, res) => {
     try {

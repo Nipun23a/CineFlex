@@ -1,130 +1,171 @@
+// src/pages/ProfilePage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    User,
     Mail,
-    Phone,
+    Phone, // kept in case you add later, but not shown in UI
     Shield,
-    MapPin,
     Calendar,
     Lock,
     Edit,
-    CreditCard,
-    Bell,
-    Ticket,
-    Crown,
-    CheckCircle2,
-    AlertCircle,
-    X,
     Upload,
+    Ticket,
+    CheckCircle2,
     Clock,
+    X,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import {
+    getUserById,
+    updateUser,
+    updatePassword,
+    getBookingByUser,
+} from "../utils/api";
 
-// If you already have an AuthContext, you can plug it in here
-// import { useAuth } from "../context/AuthContext";
+// ------------------------------ Utils ------------------------------
+const getAvatarUrl = (name) =>
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        name || "User"
+    )}&background=1e1e2f&color=fff`;
 
+function formatDate(dateString) {
+    const d = new Date(dateString);
+    return d.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+// ------------------------------ Page ------------------------------
 const ProfilePage = () => {
     const navigate = useNavigate();
-    // const { user } = useAuth();
-
-    // --- Mock user (replace with API or context data) ---
-    const mockUser = {
-        id: "U-10294",
-        name: "John Doe",
-        email: "john.doe@email.com",
-        phone: "+94 77 123 4567",
-        avatar: "https://ui-avatars.com/api/?name=John+Doe&background=1e1e2f&color=fff",
-        joinedAt: "2024-05-12T10:20:00Z",
-        tier: "Gold",
-        city: "Colombo",
-        country: "Sri Lanka",
-        preferences: {
-            promoEmails: true,
-            bookingReminders: true,
-            smsAlerts: false,
-        },
-    };
-
-    // --- Mock last bookings (you can pass real bookings or fetch) ---
-    const mockRecentBookings = [
-        {
-            id: "BK145",
-            movie: { title: "Dune: Part Two", poster: "https://via.placeholder.com/80x110/1a1a1a/ffffff?text=Poster" },
-            cinema: "Savoy 3D",
-            date: "2024-12-20",
-            time: "09:00 PM",
-            seats: ["C5", "C6"],
-            total: 4200,
-            status: "completed",
-            bookedAt: "2024-12-01T12:45:00Z",
-        },
-        {
-            id: "BK146",
-            movie: { title: "Oppenheimer", poster: "https://via.placeholder.com/80x110/1a1a1a/ffffff?text=Poster" },
-            cinema: "PVR One Galle Face",
-            date: "2024-12-28",
-            time: "07:30 PM",
-            seats: ["B7", "B8"],
-            total: 4800,
-            status: "confirmed",
-            bookedAt: "2024-12-10T09:15:00Z",
-        },
-    ];
-
+    const { user } = useAuth(); // from AuthContext (contains id + minimal fields from login)
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
     const [recentBookings, setRecentBookings] = useState([]);
 
     // UI State
-    const [activeTab, setActiveTab] = useState("overview"); // overview | details | security | payments | notifications
+    const [activeTab, setActiveTab] = useState("overview"); // overview | details | security
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editData, setEditData] = useState({ name: "", phone: "" });
+    const [editData, setEditData] = useState({ name: "", email: "" });
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [pwd, setPwd] = useState({ current: "", next: "", confirm: "" });
 
+    // Load full user + bookings
     useEffect(() => {
         const load = async () => {
-            // Simulate API delay
-            await new Promise((r) => setTimeout(r, 600));
-            setProfile(mockUser);
-            setRecentBookings(mockRecentBookings);
-            setEditData({ name: mockUser.name, phone: mockUser.phone });
-            setLoading(false);
+            if (!user?.id && !user?._id) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const uid = user.id || user._id;
+                const [{ data: userRes }, { data: bookingsRes }] = await Promise.all([
+                    getUserById(uid),
+                    getBookingByUser(uid),
+                ]);
+
+                // userRes expected shape: { _id, name, email, role, createdAt }
+                const fullUser = userRes?.user || userRes; // in case your API wraps
+                setProfile(fullUser);
+                setEditData({ name: fullUser?.name || "", email: fullUser?.email || "" });
+
+                // bookingsRes expected array of bookings (with showtime + theater + movie populated if your API does so)
+                const mapped = (bookingsRes?.bookings || bookingsRes || []).map((b) => {
+                    // Safely read nested fields with fallbacks
+                    const movie =
+                        b?.showtime?.movie || b?.movie || { title: "Unknown", poster: "" };
+                    const theater =
+                        b?.showtime?.theater || b?.theater || { name: "Unknown Theater" };
+
+                    const showDate = b?.showtime?.date || b?.date || b?.createdAt;
+                    const showTime = b?.showtime?.startTime || b?.time || "";
+
+                    const seats = Array.isArray(b?.seats)
+                        ? b.seats.map((s) =>
+                            typeof s === "string"
+                                ? s
+                                : `${(s?.row || "").toString().toUpperCase()}${s?.number ?? ""}`
+                        )
+                        : [];
+
+                    return {
+                        id: b?._id || b?.id,
+                        movie: {
+                            title: movie?.title || "Unknown",
+                            poster:
+                                movie?.posterUrl ||
+                                movie?.poster ||
+                                "https://via.placeholder.com/80x110/1a1a1a/ffffff?text=Poster",
+                        },
+                        cinema: theater?.name || "Unknown Theater",
+                        date: showDate,
+                        time: showTime,
+                        seats,
+                        total: b?.totalPrice ?? 0,
+                        status: normalizeStatus(b?.paymentStatus),
+                        bookedAt: b?.createdAt,
+                    };
+                });
+
+                setRecentBookings(mapped);
+            } catch (e) {
+                console.error(e);
+                alert("Failed to load profile or bookings.");
+            } finally {
+                setLoading(false);
+            }
         };
         load();
-    }, []);
+    }, [user]);
 
     const joinedLabel = useMemo(() => {
-        if (!profile?.joinedAt) return "-";
-        return new Date(profile.joinedAt).toLocaleDateString("en-US", {
+        if (!profile?.createdAt) return "-";
+        return new Date(profile.createdAt).toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",
         });
     }, [profile]);
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = async () => {
         if (!editData.name.trim()) return alert("Name is required");
-        // TODO: call update API
-        setProfile((p) => ({ ...p, name: editData.name.trim(), phone: editData.phone.trim() }));
-        setShowEditModal(false);
+        if (!editData.email.trim()) return alert("Email is required");
+
+        try {
+            const payload = {
+                _id: profile._id, // or id based on your API requirement
+                name: editData.name.trim(),
+                email: editData.email.trim(),
+            };
+            const { data } = await updateUser(payload);
+            const updated = data?.user || data || payload;
+            setProfile((p) => ({ ...p, ...updated }));
+            setShowEditModal(false);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update profile.");
+        }
     };
 
-    const handleChangePassword = () => {
+    const handleChangePassword = async () => {
         if (!pwd.current || !pwd.next || !pwd.confirm) return alert("Fill all fields");
         if (pwd.next !== pwd.confirm) return alert("New passwords do not match");
-        // TODO: call change password API
-        setShowPasswordModal(false);
-        setPwd({ current: "", next: "", confirm: "" });
-        alert("Password updated (mock)");
-    };
 
-    const togglePref = (key) => {
-        setProfile((p) => ({
-            ...p,
-            preferences: { ...p.preferences, [key]: !p.preferences[key] },
-        }));
-        // TODO: persist preference
+        try {
+            await updatePassword({
+                currentPassword: pwd.current,
+                newPassword: pwd.next,
+            });
+            setShowPasswordModal(false);
+            setPwd({ current: "", next: "", confirm: "" });
+            alert("Password updated");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update password.");
+        }
     };
 
     if (loading) {
@@ -133,6 +174,22 @@ const ProfilePage = () => {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4" />
                     <p className="text-gray-400">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <p className="text-gray-400">You’re not signed in.</p>
+                    <button
+                        onClick={() => navigate("/login")}
+                        className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600"
+                    >
+                        Go to Login
+                    </button>
                 </div>
             </div>
         );
@@ -154,13 +211,13 @@ const ProfilePage = () => {
                         <div className="flex flex-col sm:flex-row gap-6">
                             <div className="relative w-28 h-28 flex-shrink-0">
                                 <img
-                                    src={profile.avatar}
+                                    src={getAvatarUrl(profile.name)}
                                     alt={profile.name}
                                     className="w-28 h-28 rounded-2xl object-cover"
                                 />
                                 <button
                                     className="absolute -bottom-2 -right-2 bg-yellow-500 text-black rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-semibold hover:bg-yellow-600"
-                                    onClick={() => alert("Upload coming soon (mock)")}
+                                    onClick={() => alert("Upload coming soon")}
                                 >
                                     <Upload className="w-3.5 h-3.5" /> Upload
                                 </button>
@@ -171,18 +228,19 @@ const ProfilePage = () => {
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <h2 className="text-2xl font-bold">{profile.name}</h2>
-                                            <span className="inline-flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-600 px-2 py-0.5 rounded-full">
-                        <Crown className="w-3.5 h-3.5" /> {profile.tier}
-                      </span>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300">
-                                            <span className="inline-flex items-center gap-2"><Mail className="w-4 h-4 text-gray-400" /> {profile.email}</span>
-                                            <span className="inline-flex items-center gap-2"><Phone className="w-4 h-4 text-gray-400" /> {profile.phone}</span>
+                      <span className="inline-flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" /> {profile.email}
+                      </span>
                                         </div>
                                         <div className="mt-2 text-gray-400 text-sm flex flex-wrap items-center gap-4">
-                                            <span className="inline-flex items-center gap-2"><MapPin className="w-4 h-4" /> {profile.city}, {profile.country}</span>
-                                            <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4" /> Joined {joinedLabel}</span>
-                                            <span className="inline-flex items-center gap-2"><Shield className="w-4 h-4" /> ID: {profile.id}</span>
+                      <span className="inline-flex items-center gap-2">
+                        <Calendar className="w-4 h-4" /> Joined {joinedLabel}
+                      </span>
+                                            <span className="inline-flex items-center gap-2">
+                        <Shield className="w-4 h-4" /> ID: {profile._id}
+                      </span>
                                         </div>
                                     </div>
 
@@ -203,8 +261,6 @@ const ProfilePage = () => {
                                             { key: "overview", label: "Overview" },
                                             { key: "details", label: "Details" },
                                             { key: "security", label: "Security" },
-                                            { key: "payments", label: "Payments" },
-                                            { key: "notifications", label: "Notifications" },
                                         ].map((t) => (
                                             <button
                                                 key={t.key}
@@ -224,33 +280,29 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Quick Stats */}
+                    {/* Quick Stats (basic sample; you can replace with real aggregates later) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
-                        <StatCard icon={Ticket} label="Total Bookings" value={42} sub="All time" />
-                        <StatCard icon={CheckCircle2} label="Completed" value={28} sub="Watched" />
-                        <StatCard icon={Clock} label="Upcoming" value={3} sub="This month" />
+                        <StatCard icon={Ticket} label="Total Bookings" value={recentBookings.length} sub="All time" />
+                        <StatCard
+                            icon={CheckCircle2}
+                            label="Paid"
+                            value={recentBookings.filter((b) => b.status === "paid").length}
+                            sub="Successful"
+                        />
+                        <StatCard
+                            icon={Clock}
+                            label="Pending"
+                            value={recentBookings.filter((b) => b.status === "pending").length}
+                            sub="Awaiting payment"
+                        />
                     </div>
                 </div>
 
                 {/* Content Area */}
-                {activeTab === "overview" && (
-                    <OverviewSection recentBookings={recentBookings} />
-                )}
-
-                {activeTab === "details" && (
-                    <DetailsSection profile={profile} />
-                )}
-
+                {activeTab === "overview" && <OverviewSection recentBookings={recentBookings} />}
+                {activeTab === "details" && <DetailsSection profile={profile} />}
                 {activeTab === "security" && (
-                    <SecuritySection onChangePassword={() => setShowPasswordModal(true)} />)
-                }
-
-                {activeTab === "payments" && (
-                    <PaymentsSection />
-                )}
-
-                {activeTab === "notifications" && (
-                    <NotificationsSection prefs={profile.preferences} togglePref={togglePref} />
+                    <SecuritySection onChangePassword={() => setShowPasswordModal(true)} />
                 )}
             </div>
 
@@ -268,17 +320,28 @@ const ProfilePage = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-400 mb-1">Phone</label>
+                            <label className="block text-sm text-gray-400 mb-1">Email</label>
                             <input
-                                value={editData.phone}
-                                onChange={(e) => setEditData((d) => ({ ...d, phone: e.target.value }))}
+                                value={editData.email}
+                                onChange={(e) => setEditData((d) => ({ ...d, email: e.target.value }))}
                                 className="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-yellow-500"
-                                placeholder="Enter your phone"
+                                placeholder="Enter your email"
+                                type="email"
                             />
                         </div>
                         <div className="flex items-center justify-end gap-3 pt-2">
-                            <button className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600" onClick={() => setShowEditModal(false)}>Cancel</button>
-                            <button className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600" onClick={handleSaveEdit}>Save Changes</button>
+                            <button
+                                className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600"
+                                onClick={() => setShowEditModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600"
+                                onClick={handleSaveEdit}
+                            >
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </Modal>
@@ -321,8 +384,18 @@ const ProfilePage = () => {
                             </div>
                         </div>
                         <div className="flex items-center justify-end gap-3 pt-2">
-                            <button className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600" onClick={() => setShowPasswordModal(false)}>Cancel</button>
-                            <button className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600" onClick={handleChangePassword}>Update Password</button>
+                            <button
+                                className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600"
+                                onClick={() => setShowPasswordModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600"
+                                onClick={handleChangePassword}
+                            >
+                                Update Password
+                            </button>
                         </div>
                     </div>
                 </Modal>
@@ -331,8 +404,7 @@ const ProfilePage = () => {
     );
 };
 
-/* ------------------------------ Sections ------------------------------ */
-
+// ------------------------------ Sections ------------------------------
 const StatCard = ({ icon: Icon, label, value, sub }) => (
     <div className="bg-gray-800 rounded-xl p-5 flex items-center justify-between">
         <div>
@@ -347,8 +419,7 @@ const StatCard = ({ icon: Icon, label, value, sub }) => (
 );
 
 const OverviewSection = ({ recentBookings }) => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Bookings */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="lg:col-span-2 bg-gray-800 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Recent Bookings</h3>
@@ -364,8 +435,15 @@ const OverviewSection = ({ recentBookings }) => (
             ) : (
                 <div className="space-y-4">
                     {recentBookings.map((b) => (
-                        <div key={b.id} className="bg-gray-750/50 border border-gray-700 rounded-xl p-4 flex gap-4 items-center">
-                            <img src={b.movie.poster} alt={b.movie.title} className="w-16 h-24 object-cover rounded-lg" />
+                        <div
+                            key={b.id}
+                            className="bg-gray-750/50 border border-gray-700 rounded-xl p-4 flex gap-4 items-center"
+                        >
+                            <img
+                                src={b.movie.poster}
+                                alt={b.movie.title}
+                                className="w-16 h-24 object-cover rounded-lg"
+                            />
                             <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-semibold">{b.movie.title}</h4>
@@ -377,23 +455,15 @@ const OverviewSection = ({ recentBookings }) => (
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="font-semibold text-yellow-500">LKR {b.total.toLocaleString()}</div>
+                                <div className="font-semibold text-yellow-500">
+                                    LKR {Number(b.total || 0).toLocaleString()}
+                                </div>
                                 <div className="text-xs text-gray-500">#{b.id}</div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
-        </div>
-
-        {/* Membership Perks */}
-        <div className="bg-gray-800 rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4">Membership Perks</h3>
-            <ul className="space-y-3 text-sm">
-                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-yellow-500 mt-0.5" />Priority seat selection</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-yellow-500 mt-0.5" />Early access to premieres</li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-yellow-500 mt-0.5" />Exclusive discounts & offers</li>
-            </ul>
         </div>
     </div>
 );
@@ -405,18 +475,15 @@ const DetailsSection = ({ profile }) => (
             <div className="space-y-3 text-sm">
                 <Row label="Full Name" value={profile.name} />
                 <Row label="Email" value={profile.email} />
-                <Row label="Phone" value={profile.phone} />
-                <Row label="City" value={profile.city} />
-                <Row label="Country" value={profile.country} />
-                <Row label="User ID" value={profile.id} mono />
+                <Row label="Role" value={profile.role} />
+                <Row label="User ID" value={profile._id} mono />
             </div>
         </div>
         <div className="bg-gray-800 rounded-xl p-6">
             <h3 className="text-xl font-semibold mb-4">Activity</h3>
             <div className="space-y-3 text-sm">
-                <Row label="Member Since" value={formatDate(profile.joinedAt)} />
-                <Row label="Last Sign-in" value="Just now (mock)" />
-                <Row label="Two-factor" value="Enabled (mock)" />
+                <Row label="Member Since" value={formatDate(profile.createdAt)} />
+                {/* You can add Last Sign-in here if backend provides it later */}
             </div>
         </div>
     </div>
@@ -425,140 +492,90 @@ const DetailsSection = ({ profile }) => (
 const SecuritySection = ({ onChangePassword }) => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-800 rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Lock className="w-5 h-5 text-yellow-500" />Security</h3>
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-yellow-500" />
+                Security
+            </h3>
             <div className="space-y-4">
                 <div className="flex items-center justify-between bg-gray-700 rounded-lg p-4">
                     <div>
                         <div className="font-semibold">Password</div>
                         <div className="text-sm text-gray-400">Choose a strong unique password</div>
                     </div>
-                    <button onClick={onChangePassword} className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600">Change</button>
-                </div>
-                <div className="flex items-center justify-between bg-gray-700 rounded-lg p-4">
-                    <div>
-                        <div className="font-semibold">Two-Factor Authentication</div>
-                        <div className="text-sm text-gray-400">Protect your account with an extra layer</div>
-                    </div>
-                    <button onClick={() => alert("Enable 2FA (mock)")} className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500">Manage</button>
+                    <button
+                        onClick={onChangePassword}
+                        className="px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-600"
+                    >
+                        Change
+                    </button>
                 </div>
             </div>
         </div>
         <div className="bg-gray-800 rounded-xl p-6">
             <h3 className="text-xl font-semibold mb-4">Linked Accounts</h3>
             <div className="space-y-3 text-sm">
-                <Row label="Google" value="Connected (mock)" />
+                <Row label="Google" value="Not connected" />
                 <Row label="Apple" value="Not connected" />
             </div>
         </div>
     </div>
 );
 
-const PaymentsSection = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gray-800 rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-yellow-500" />Saved Methods</h3>
-            <div className="space-y-3">
-                <PaymentRow brand="Visa" last4="4242" exp="12/28" primary />
-                <PaymentRow brand="Mastercard" last4="5599" exp="05/27" />
-                <button onClick={() => alert("Add card (mock)")} className="mt-2 px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">Add new</button>
-            </div>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-6">
-            <h3 className="text-xl font-semibold mb-4">Billing Address</h3>
-            <div className="space-y-2 text-sm text-gray-300">
-                <div>123 Flower Road</div>
-                <div>Colombo 07</div>
-                <div>Sri Lanka</div>
-                <button onClick={() => alert("Edit address (mock)")} className="mt-3 px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600">Edit</button>
-            </div>
-        </div>
-    </div>
-);
-
-const NotificationsSection = ({ prefs, togglePref }) => (
-    <div className="bg-gray-800 rounded-xl p-6">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-500" />Notifications</h3>
-        <div className="space-y-3">
-            <ToggleRow label="Promotions & Offers" checked={!!prefs.promoEmails} onChange={() => togglePref("promoEmails")} />
-            <ToggleRow label="Booking Reminders" checked={!!prefs.bookingReminders} onChange={() => togglePref("bookingReminders")} />
-            <ToggleRow label="SMS Alerts" checked={!!prefs.smsAlerts} onChange={() => togglePref("smsAlerts")} />
-        </div>
-    </div>
-);
-
-/* ------------------------------ Elements ------------------------------ */
-
+// ------------------------------ Elements ------------------------------
 const Row = ({ label, value, mono }) => (
     <div className="flex items-center justify-between py-2 border-b border-gray-700/70 last:border-none">
         <div className="text-gray-400">{label}</div>
-        <div className={`ml-4 ${mono ? "font-mono text-yellow-400" : "font-medium"}`}>{value}</div>
+        <div className={`ml-4 ${mono ? "font-mono text-yellow-400" : "font-medium"}`}>
+            {String(value ?? "-")}
+        </div>
     </div>
 );
 
-const StatusBadge = ({ status }) => {
-    const map = {
-        confirmed: "bg-green-500/20 text-green-400 border-green-600",
-        completed: "bg-blue-500/20 text-blue-400 border-blue-600",
-        cancelled: "bg-red-500/20 text-red-400 border-red-600",
-    };
-    const label = {
-        confirmed: "Confirmed",
-        completed: "Completed",
-        cancelled: "Cancelled",
-    }[status] || status;
-    return (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${map[status] || "bg-gray-700 text-gray-300 border-gray-600"}`}>
-      {label}
-    </span>
-    );
+const STATUS_STYLES = {
+    confirmed: "bg-green-500/20 text-green-400 border-green-600",
+    completed: "bg-blue-500/20 text-blue-400 border-blue-600",
+    cancelled: "bg-red-500/20 text-red-400 border-red-600",
+    paid: "bg-green-500/20 text-green-400 border-green-600",
+    pending: "bg-yellow-500/20 text-yellow-400 border-yellow-600",
+    failed: "bg-red-500/20 text-red-400 border-red-600",
+};
+const STATUS_LABELS = {
+    confirmed: "Confirmed",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    paid: "Paid",
+    pending: "Pending",
+    failed: "Failed",
 };
 
-const PaymentRow = ({ brand, last4, exp, primary }) => (
-    <div className="flex items-center justify-between bg-gray-700 rounded-lg p-4">
-        <div>
-            <div className="font-semibold">{brand} •••• {last4}</div>
-            <div className="text-xs text-gray-400">Expires {exp}</div>
-        </div>
-        <div className="flex items-center gap-2">
-            {primary && <span className="text-xs px-2 py-1 rounded-full border border-yellow-600 text-yellow-400 bg-yellow-500/20">Primary</span>}
-            <button onClick={() => alert("Set primary (mock)")} className="px-3 py-1.5 rounded-lg bg-gray-600 text-white hover:bg-gray-500 text-sm">Primary</button>
-            <button onClick={() => alert("Remove card (mock)")} className="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-500 text-sm">Remove</button>
-        </div>
-    </div>
-);
+function normalizeStatus(paymentStatus) {
+    // Map your booking's `paymentStatus` directly; extend if you add a booking `status`
+    const s = (paymentStatus || "").toLowerCase();
+    if (["paid", "pending", "failed"].includes(s)) return s;
+    return "pending";
+}
 
-const ToggleRow = ({ label, checked, onChange }) => (
-    <div className="flex items-center justify-between bg-gray-700 rounded-lg p-4">
-        <div className="font-medium">{label}</div>
-        <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" checked={checked} onChange={onChange} />
-            <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-        </label>
-    </div>
-);
+const StatusBadge = ({ status }) => {
+    const cls = STATUS_STYLES[status] || "bg-gray-700 text-gray-300 border-gray-600";
+    const label = STATUS_LABELS[status] || status;
+    return (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${cls}`}>{label}</span>
+    );
+};
 
 const Modal = ({ title, onClose, children }) => (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
         <div className="bg-gray-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-2xl font-bold">{title}</h2>
-                <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+                <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                    <X className="w-6 h-6" />
+                </button>
             </div>
             <div className="p-6">{children}</div>
         </div>
     </div>
 );
 
-/* ------------------------------ Utils ------------------------------ */
-
-function formatDate(dateString) {
-    const d = new Date(dateString);
-    return d.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
-}
-
 export default ProfilePage;
+

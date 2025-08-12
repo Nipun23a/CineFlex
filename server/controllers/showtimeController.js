@@ -18,7 +18,6 @@ export const createShowtime = async (req, res) => {
         const showtime = new Showtime({
             movie,
             theater,
-            screen,
             date,
             startTime,
             totalSeats,
@@ -30,6 +29,7 @@ export const createShowtime = async (req, res) => {
         res.status(201).json({ message: 'Showtime created', showtime });
     } catch (err) {
         res.status(500).json({ message: 'Failed to create showtime', error: err.message });
+        console.log(err.message);
     }
 };
 

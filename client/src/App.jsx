@@ -18,6 +18,13 @@ import BookingsPage from "./pages/BookingPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import AdminLayout from "./layouts/AdminLayout.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
+import MoviePage from "./pages/MovieDetailPage.jsx";
+import AdminMoviesPage from "./pages/admin/MoviePage.jsx";
+import AdminTheatersPage from "./pages/admin/TheaterPage.jsx";
+import AdminShowtimesPage from "./pages/admin/ShowtimePage.jsx";
+import AdminBookingsPage from "./pages/admin/BookingPage.jsx";
+import AdminUsersPage from "./pages/admin/UserPage.jsx";
+import AdminSettingsPage from "./pages/admin/SettingScreen.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -74,6 +81,50 @@ function App() {
                             element={
                                 <AdminLayout>
                                     <AdminDashboard/>
+                                </AdminLayout>
+                            }
+                        />
+                        <Route path="/admin/movies"
+                               element={
+                                <AdminLayout>
+                                    <AdminMoviesPage/>
+                                </AdminLayout>
+                               }
+                        />
+                        <Route path="/admin/theater"
+                               element={
+                                <AdminLayout>
+                                    <AdminTheatersPage/>
+                                </AdminLayout>
+                               }
+                        />
+                        <Route path="/admin/showtimes"
+                               element={
+                                <AdminLayout>
+                                    <AdminShowtimesPage/>
+                                </AdminLayout>
+                               }
+                        />
+                        <Route path="/admin/bookings"
+                               element={
+                                <AdminLayout>
+                                    <AdminBookingsPage/>
+                                </AdminLayout>
+                               }
+                        />
+                        <Route path="/admin/users"
+                               element={
+                                <AdminLayout>
+                                    <AdminUsersPage/>
+                                </AdminLayout>
+                               }
+
+                        />
+                        <Route
+                            path="/admin/settings"
+                            element={
+                                <AdminLayout>
+                                    <AdminSettingsPage/>
                                 </AdminLayout>
                             }
                         />

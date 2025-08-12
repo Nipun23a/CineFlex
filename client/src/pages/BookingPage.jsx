@@ -1,236 +1,174 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Ticket, Star, Filter, Search, Eye, X, CreditCard, Download, Mail } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import { Calendar, Clock, MapPin, Ticket, Star, Filter, Search, Eye, X, CreditCard, Download, Mail } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import QRCode from "qrcode";
+import { jsPDF } from "jspdf";
+import { getBookingById, getBookingByUser } from "../utils/api.js";
+
+// Map backend paymentStatus -> your UI status
+const mapStatus = (paymentStatus) => {
+    if (paymentStatus === "paid") return "completed";
+    if (paymentStatus === "failed") return "cancelled";
+    return "confirmed"; // pending
+};
+const toSeatCode = (x) => {
+    if (!x) return null;
+    if (typeof x === "string") {
+        const m = x.toUpperCase().match(/^([A-Z]+)\s*-?\s*(\d+)$/);
+        return m ? `${m[1]}${m[2]}` : null;
+    }
+    if (Array.isArray(x)) return null; // handled by walker
+    if (typeof x === "object" && x.row != null && x.number != null) {
+        return `${String(x.row).toUpperCase()}${x.number}`;
+    }
+    return null;
+};
+
+const flattenSeatCodes = (seats) => {
+    if (!Array.isArray(seats)) return [];
+    const out = [];
+    const walk = (arr) => {
+        arr.forEach((el) => {
+            if (Array.isArray(el)) walk(el);
+            else {
+                const code = toSeatCode(el);
+                if (code) out.push(code);
+            }
+        });
+    };
+    walk(seats);
+    return out;
+};
+
+
+// Format booking from backend into the UI shape you already use
+const mapBookingFromApi = (b) => {
+    const st = b?.showtime || {};
+    const mv = st?.movie || b?.movie || {};
+    const th = b?.theater || st?.theater || {};
+
+    const seatsCodes = flattenSeatCodes(b?.seats);
+    const status =
+        b?.paymentStatus === "paid" ? "completed" :
+            b?.paymentStatus === "failed" ? "cancelled" :
+                "confirmed"; // pending => confirmed
+
+    return {
+        id: String(b._id || b.id || ""),
+        movie: {
+            title: mv.title || "Untitled",
+            poster: mv.posterUrl || "https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie",
+            rating: mv.rating ?? "—",
+            genre: Array.isArray(mv.genre) ? mv.genre.join(", ") : (mv.genre || "—"),
+            duration: mv.duration ? `${mv.duration} mins` : "—",
+            language: mv.language || "—",
+            format: st.format || "—",
+        },
+        cinema: th?.name || "—",
+        cinemaAddress: th?.location || "—",
+        date: st?.date,
+        time: st?.startTime || "—",
+        seats: seatsCodes,
+        total: Number(b?.totalPrice || 0),
+        status,
+        paymentMethod: b?.paymentMethod || "stripe",
+        // REMOVE transactionId
+        // transactionId: b?.transactionId,
+
+        bookedAt: b?.createdAt,
+        customerInfo: {
+            name: b?.customer_name || b?.user?.name || "—",
+            email: b?.customer_email || b?.user?.email || "—",
+            phone: b?.customer_phone || "—",
+        },
+        qrCodeData: b?.code || String(b?._id || "").slice(-8).toUpperCase(), // booking code used for QR
+        bookingCode: b?.code || String(b?._id || "").slice(-8).toUpperCase(),
+    };
+};
 
 const BookingsPage = () => {
+    const { user } = useAuth();
+    const userId = user?._id || user?.id;
+
     const [bookings, setBookings] = useState([]);
+    const [qrDataUrl, setQrDataUrl] = useState(null);
+
     const [filteredBookings, setFilteredBookings] = useState([]);
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState("all");
+    const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
+
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
-    // Mock booking data - replace with actual API call
-    const mockBookings = [
-        {
-            id: 'BK001',
-            movie: {
-                title: 'Spider-Man: No Way Home',
-                poster: 'https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie',
-                rating: 8.4,
-                genre: 'Action, Adventure',
-                duration: '148 mins',
-                language: 'English',
-                format: 'IMAX 3D'
-            },
-            cinema: 'CineMax Downtown',
-            cinemaAddress: '123 Main Street, Downtown, City 12345',
-            screen: 'Screen 3',
-            date: '2024-12-15',
-            time: '7:30 PM',
-            seats: ['A7', 'A8'],
-            total: 32.50,
-            ticketPrice: 15.00,
-            serviceFee: 2.50,
-            status: 'confirmed',
-            paymentMethod: 'stripe',
-            transactionId: 'stripe_1234567',
-            bookedAt: '2024-12-10T10:30:00Z',
-            customerInfo: {
-                name: 'John Doe',
-                email: 'john.doe@email.com',
-                phone: '+1 (555) 123-4567'
-            },
-            qrCode: 'https://via.placeholder.com/150x150/000000/ffffff?text=QR+CODE',
-            bookingCode: 'SPIDERMAN001'
-        },
-        {
-            id: 'BK002',
-            movie: {
-                title: 'Dune: Part Two',
-                poster: 'https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie',
-                rating: 8.8,
-                genre: 'Sci-Fi, Adventure',
-                duration: '166 mins',
-                language: 'English',
-                format: 'Dolby Atmos'
-            },
-            cinema: 'Starlight Cinema',
-            cinemaAddress: '456 Oak Avenue, Midtown, City 54321',
-            screen: 'Screen 1',
-            date: '2024-12-20',
-            time: '9:00 PM',
-            seats: ['B5', 'B6', 'B7'],
-            total: 47.50,
-            ticketPrice: 15.00,
-            serviceFee: 2.50,
-            status: 'confirmed',
-            paymentMethod: 'paypal',
-            transactionId: 'paypal_7890123',
-            bookedAt: '2024-12-08T15:45:00Z',
-            customerInfo: {
-                name: 'John Doe',
-                email: 'john.doe@email.com',
-                phone: '+1 (555) 123-4567'
-            },
-            qrCode: 'https://via.placeholder.com/150x150/000000/ffffff?text=QR+CODE',
-            bookingCode: 'DUNE002'
-        },
-        {
-            id: 'BK003',
-            movie: {
-                title: 'Oppenheimer',
-                poster: 'https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie',
-                rating: 8.6,
-                genre: 'Biography, Drama',
-                duration: '180 mins',
-                language: 'English',
-                format: '70mm IMAX'
-            },
-            cinema: 'Grand Theater',
-            cinemaAddress: '789 Park Lane, Uptown, City 67890',
-            screen: 'Screen 5',
-            date: '2024-12-05',
-            time: '6:00 PM',
-            seats: ['C10', 'C11'],
-            total: 32.50,
-            ticketPrice: 15.00,
-            serviceFee: 2.50,
-            status: 'completed',
-            paymentMethod: 'premises',
-            transactionId: 'premises_4567890',
-            bookedAt: '2024-12-01T12:20:00Z',
-            customerInfo: {
-                name: 'John Doe',
-                email: 'john.doe@email.com',
-                phone: '+1 (555) 123-4567'
-            },
-            qrCode: 'https://via.placeholder.com/150x150/000000/ffffff?text=QR+CODE',
-            bookingCode: 'OPPN003'
-        },
-        {
-            id: 'BK004',
-            movie: {
-                title: 'Avatar: The Way of Water',
-                poster: 'https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie',
-                rating: 7.9,
-                genre: 'Action, Adventure',
-                duration: '192 mins',
-                language: 'English',
-                format: '3D IMAX'
-            },
-            cinema: 'Mega Cineplex',
-            cinemaAddress: '321 Broadway, Theater District, City 13579',
-            screen: 'Screen 2',
-            date: '2024-11-28',
-            time: '8:30 PM',
-            seats: ['D1', 'D2'],
-            total: 32.50,
-            ticketPrice: 15.00,
-            serviceFee: 2.50,
-            status: 'completed',
-            paymentMethod: 'stripe',
-            transactionId: 'stripe_9876543',
-            bookedAt: '2024-11-25T09:15:00Z',
-            customerInfo: {
-                name: 'John Doe',
-                email: 'john.doe@email.com',
-                phone: '+1 (555) 123-4567'
-            },
-            qrCode: 'https://via.placeholder.com/150x150/000000/ffffff?text=QR+CODE',
-            bookingCode: 'AVATAR004'
-        },
-        {
-            id: 'BK005',
-            movie: {
-                title: 'The Batman',
-                poster: 'https://via.placeholder.com/100x150/1a1a1a/yellow?text=Movie',
-                rating: 8.2,
-                genre: 'Action, Crime',
-                duration: '176 mins',
-                language: 'English',
-                format: 'Standard 2D'
-            },
-            cinema: 'CineMax Downtown',
-            cinemaAddress: '123 Main Street, Downtown, City 12345',
-            screen: 'Screen 4',
-            date: '2024-12-25',
-            time: '10:00 PM',
-            seats: ['F8', 'F9', 'F10', 'F11'],
-            total: 62.50,
-            ticketPrice: 15.00,
-            serviceFee: 2.50,
-            status: 'cancelled',
-            paymentMethod: 'stripe',
-            transactionId: 'stripe_1111111',
-            bookedAt: '2024-12-12T14:10:00Z',
-            customerInfo: {
-                name: 'John Doe',
-                email: 'john.doe@email.com',
-                phone: '+1 (555) 123-4567'
-            },
-            qrCode: 'https://via.placeholder.com/150x150/000000/ffffff?text=QR+CODE',
-            bookingCode: 'BATMAN005'
-        }
-    ];
-
+    // Fetch bookings for the logged-in user
     useEffect(() => {
-        // Simulate API call
+        let mounted = true;
         const fetchBookings = async () => {
+            if (!userId) return;
             setLoading(true);
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setBookings(mockBookings);
-            setFilteredBookings(mockBookings);
-            setLoading(false);
+            try {
+                const res = await getBookingByUser(userId);
+                const list = Array.isArray(res.data) ? res.data : res.data?.bookings || res.data || [];
+                const mapped = list.map(mapBookingFromApi);
+                if (mounted) {
+                    setBookings(mapped);
+                    setFilteredBookings(mapped);
+                }
+            } catch (e) {
+                console.error(e);
+                if (mounted) {
+                    setBookings([]);
+                    setFilteredBookings([]);
+                }
+            } finally {
+                if (mounted) setLoading(false);
+            }
         };
-
         fetchBookings();
-    }, []);
+        return () => { mounted = false; };
+    }, [userId]);
 
+    // Filter + search
     useEffect(() => {
         let filtered = bookings;
-
-        // Filter by status
-        if (filterStatus !== 'all') {
-            filtered = filtered.filter(booking => booking.status === filterStatus);
+        if (filterStatus !== "all") {
+            filtered = filtered.filter((b) => b.status === filterStatus);
         }
-
-        // Filter by search term
         if (searchTerm) {
-            filtered = filtered.filter(booking =>
-                booking.movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                booking.cinema.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                booking.id.toLowerCase().includes(searchTerm.toLowerCase())
+            const q = searchTerm.toLowerCase();
+            filtered = filtered.filter(
+                (b) =>
+                    b.movie.title.toLowerCase().includes(q) ||
+                    (b.cinema || "").toLowerCase().includes(q) ||
+                    (b.id || "").toLowerCase().includes(q)
             );
         }
-
         setFilteredBookings(filtered);
     }, [bookings, filterStatus, searchTerm]);
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
+        if (Number.isNaN(date.getTime())) return "—";
+        return date.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
         });
     };
 
     const getStatusBadge = (status) => {
         const statusStyles = {
-            confirmed: 'bg-green-500 bg-opacity-20 text-white border-green-500',
-            completed: 'bg-blue-500 bg-opacity-20 text-white border-blue-500',
-            cancelled: 'bg-red-500 bg-opacity-20 text-white border-red-500'
+            confirmed: "bg-green-500 bg-opacity-20 text-white border-green-500",
+            completed: "bg-blue-500 bg-opacity-20 text-white border-blue-500",
+            cancelled: "bg-red-500 bg-opacity-20 text-white border-red-500",
         };
-
         const statusLabels = {
-            confirmed: 'Confirmed',
-            completed: 'Completed',
-            cancelled: 'Cancelled'
+            confirmed: "Confirmed",
+            completed: "Completed",
+            cancelled: "Cancelled",
         };
-
         return (
             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusStyles[status]}`}>
         {statusLabels[status]}
@@ -239,32 +177,103 @@ const BookingsPage = () => {
     };
 
     const getPaymentMethodLabel = (method) => {
-        const labels = {
-            stripe: 'Card',
-            paypal: 'PayPal',
-            premises: 'Pay at Cinema'
-        };
-        return labels[method] || method;
+        const labels = { stripe: "Card", paypal: "PayPal", premises: "Pay at Cinema" };
+        return labels[method] || method || "—";
     };
 
-    const handleViewDetails = (booking) => {
-        setSelectedBooking(booking);
-        setShowModal(true);
+    const handleViewDetails = async (booking) => {
+        try {
+            const { data } = await getBookingById(booking.id); // optional refetch
+            const mapped = mapBookingFromApi(data || booking);
+            setSelectedBooking(mapped);
+            // Generate QR from bookingCode (or qrCodeData)
+            const url = await QRCode.toDataURL(mapped.bookingCode, { width: 256, margin: 1 });
+            setQrDataUrl(url);
+            setShowModal(true);
+        } catch {
+            const mapped = mapBookingFromApi(booking);
+            setSelectedBooking(mapped);
+            const url = await QRCode.toDataURL(mapped.bookingCode, { width: 256, margin: 1 });
+            setQrDataUrl(url);
+            setShowModal(true);
+        }
     };
+
 
     const closeModal = () => {
         setShowModal(false);
         setSelectedBooking(null);
     };
 
-    const handleDownloadTicket = () => {
-        // In your actual app, this would generate/download the ticket
-        alert('Downloading ticket...');
-    };
+    const handleDownloadTicket = async () => {
+        if (!selectedBooking) return;
 
-    const handleResendEmail = () => {
-        // In your actual app, this would resend the confirmation email
-        alert('Confirmation email sent!');
+        // make sure we have a QR image
+        let qr = qrDataUrl;
+        if (!qr) {
+            qr = await QRCode.toDataURL(selectedBooking.bookingCode, { width: 300, margin: 1 });
+            setQrDataUrl(qr);
+        }
+
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
+        const pad = 32;
+        let y = pad;
+
+        // Header
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("CineFlexx Ticket", pad, y);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        y += 22;
+        doc.text(`Booking Code: ${selectedBooking.bookingCode}`, pad, y);
+        y += 18;
+        doc.text(`Booked on: ${new Date(selectedBooking.bookedAt).toLocaleString()}`, pad, y);
+
+        // Divider
+        y += 16;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(pad, y, 595 - pad, y);
+        y += 24;
+
+        // Movie & show info
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(selectedBooking.movie.title, pad, y);
+        y += 18;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.text(`Cinema: ${selectedBooking.cinema}`, pad, y); y += 16;
+        doc.text(`Address: ${selectedBooking.cinemaAddress}`, pad, y); y += 16;
+        doc.text(`Date: ${new Date(selectedBooking.date).toLocaleDateString()}`, pad, y); y += 16;
+        doc.text(`Time: ${selectedBooking.time}`, pad, y); y += 16;
+
+        // Seats & price
+        const seatsLine = selectedBooking.seats.join(", ");
+        doc.text(`Seats: ${seatsLine}`, pad, y); y += 16;
+        doc.text(`Total: $${Number(selectedBooking.total || 0).toFixed(2)}`, pad, y); y += 24;
+
+        // Customer
+        doc.setFont("helvetica", "bold");
+        doc.text("Customer", pad, y);
+        doc.setFont("helvetica", "normal");
+        y += 18;
+        doc.text(`Name: ${selectedBooking.customerInfo.name}`, pad, y); y += 16;
+        doc.text(`Email: ${selectedBooking.customerInfo.email}`, pad, y); y += 16;
+        doc.text(`Phone: ${selectedBooking.customerInfo.phone}`, pad, y); y += 24;
+
+        // QR on the right
+        const qrSize = 140;
+        const qrX = 595 - pad - qrSize; // right side
+        const qrY = 140;
+        doc.addImage(qr, "PNG", qrX, qrY, qrSize, qrSize);
+
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(120);
+        doc.text("Please present this ticket and QR code at the cinema entrance.", pad, 812 - pad);
+
+        doc.save(`ticket-${selectedBooking.bookingCode}.pdf`);
     };
 
     if (loading) {
@@ -326,9 +335,9 @@ const BookingsPage = () => {
                         <Ticket className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                         <h3 className="text-xl font-semibold mb-2">No bookings found</h3>
                         <p className="text-gray-400">
-                            {searchTerm || filterStatus !== 'all'
-                                ? 'Try adjusting your search or filter criteria.'
-                                : 'You haven\'t made any bookings yet.'}
+                            {searchTerm || filterStatus !== "all"
+                                ? "Try adjusting your search or filter criteria."
+                                : "You haven't made any bookings yet."}
                         </p>
                     </div>
                 ) : (
@@ -383,7 +392,7 @@ const BookingsPage = () => {
                                                 <div>
                                                     <div className="font-semibold">{booking.cinema}</div>
                                                     <div className="text-sm text-gray-400">
-                                                        Seats: {booking.seats.join(', ')}
+                                                        Seats: {booking.seats.join(", ")}
                                                     </div>
                                                 </div>
                                             </div>
@@ -420,12 +429,12 @@ const BookingsPage = () => {
                                     {/* Booking Date */}
                                     <div className="mt-4 pt-4 border-t border-gray-700">
                                         <p className="text-xs text-gray-500">
-                                            Booked on {new Date(booking.bookedAt).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
+                                            Booked on {new Date(booking.bookedAt).toLocaleDateString("en-US", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
                                         })}
                                         </p>
                                     </div>
@@ -435,7 +444,7 @@ const BookingsPage = () => {
                     </div>
                 )}
 
-                {/* Pagination could go here if needed */}
+                {/* Pagination note */}
                 {filteredBookings.length > 0 && (
                     <div className="mt-8 text-center">
                         <p className="text-gray-400">
@@ -452,16 +461,13 @@ const BookingsPage = () => {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-6 border-b border-gray-700">
                             <h2 className="text-2xl font-bold">Booking Details</h2>
-                            <button
-                                onClick={closeModal}
-                                className="text-gray-400 hover:text-white transition-colors"
-                            >
+                            <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
                         <div className="p-6">
-                            {/* Movie Info Section */}
+                            {/* Movie Info */}
                             <div className="flex gap-6 mb-8">
                                 <img
                                     src={selectedBooking.movie.poster}
@@ -478,21 +484,16 @@ const BookingsPage = () => {
                                         </div>
                                         <p><span className="text-gray-400">Duration:</span> {selectedBooking.movie.duration}</p>
                                         <p><span className="text-gray-400">Language:</span> {selectedBooking.movie.language}</p>
-                                        <p><span className="text-gray-400">Format:</span> {selectedBooking.movie.format}</p>
                                     </div>
-                                    <div className="mt-4">
-                                        {getStatusBadge(selectedBooking.status)}
-                                    </div>
+                                    <div className="mt-4">{getStatusBadge(selectedBooking.status)}</div>
                                 </div>
                             </div>
 
-                            {/* Booking Information Grid */}
+                            {/* Info Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                {/* Show Details */}
                                 <div className="bg-gray-700 rounded-lg p-4">
                                     <h4 className="font-semibold mb-3 flex items-center">
-                                        <Calendar className="w-5 h-5 mr-2 text-yellow-500" />
-                                        Show Details
+                                        <Calendar className="w-5 h-5 mr-2 text-yellow-500" /> Show Details
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
@@ -503,18 +504,12 @@ const BookingsPage = () => {
                                             <span className="text-gray-400">Time:</span>
                                             <span>{selectedBooking.time}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-400">Screen:</span>
-                                            <span>{selectedBooking.screen}</span>
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Cinema Details */}
                                 <div className="bg-gray-700 rounded-lg p-4">
                                     <h4 className="font-semibold mb-3 flex items-center">
-                                        <MapPin className="w-5 h-5 mr-2 text-yellow-500" />
-                                        Cinema Details
+                                        <MapPin className="w-5 h-5 mr-2 text-yellow-500" /> Cinema Details
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                         <div>
@@ -524,16 +519,14 @@ const BookingsPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Seat Information */}
                                 <div className="bg-gray-700 rounded-lg p-4">
                                     <h4 className="font-semibold mb-3 flex items-center">
-                                        <Ticket className="w-5 h-5 mr-2 text-yellow-500" />
-                                        Seat Information
+                                        <Ticket className="w-5 h-5 mr-2 text-yellow-500" /> Seat Information
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Seats:</span>
-                                            <span>{selectedBooking.seats.join(', ')}</span>
+                                            <span>{selectedBooking.seats.join(", ")}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Quantity:</span>
@@ -542,47 +535,29 @@ const BookingsPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Payment Information */}
                                 <div className="bg-gray-700 rounded-lg p-4">
                                     <h4 className="font-semibold mb-3 flex items-center">
-                                        <CreditCard className="w-5 h-5 mr-2 text-yellow-500" />
-                                        Payment Information
+                                        <CreditCard className="w-5 h-5 mr-2 text-yellow-500" /> Payment Information
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-gray-400">Method:</span>
                                             <span>{getPaymentMethodLabel(selectedBooking.paymentMethod)}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-400">Transaction ID:</span>
-                                            <span className="font-mono text-xs">{selectedBooking.transactionId}</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Price Breakdown */}
+                            {/* Price breakdown (optional if you store per-ticket price/fee) */}
                             <div className="bg-gray-700 rounded-lg p-4 mb-6">
-                                <h4 className="font-semibold mb-3">Price Breakdown</h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Tickets ({selectedBooking.seats.length}x):</span>
-                                        <span>${(selectedBooking.ticketPrice * selectedBooking.seats.length).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Service Fee:</span>
-                                        <span>${selectedBooking.serviceFee.toFixed(2)}</span>
-                                    </div>
-                                    <div className="border-t border-gray-600 pt-2 mt-2">
-                                        <div className="flex justify-between font-semibold text-lg">
-                                            <span>Total:</span>
-                                            <span className="text-yellow-500">${selectedBooking.total.toFixed(2)}</span>
-                                        </div>
-                                    </div>
+                                <h4 className="font-semibold mb-3">Total</h4>
+                                <div className="flex justify-between font-semibold text-lg">
+                                    <span>Total:</span>
+                                    <span className="text-yellow-500">${Number(selectedBooking.total || 0).toFixed(2)}</span>
                                 </div>
                             </div>
 
-                            {/* Customer Information */}
+                            {/* Customer Info */}
                             <div className="bg-gray-700 rounded-lg p-4 mb-6">
                                 <h4 className="font-semibold mb-3">Customer Information</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -605,19 +580,14 @@ const BookingsPage = () => {
                                 </div>
                             </div>
 
-                            {/* QR Code and Actions */}
+                            {/* QR + Actions */}
                             <div className="flex flex-col md:flex-row gap-6 items-center">
-                                {/* QR Code */}
                                 <div className="text-center">
-                                    <img
-                                        src={selectedBooking.qrCode}
-                                        alt="QR Code"
-                                        className="w-32 h-32 mx-auto mb-2"
-                                    />
-                                    <p className="text-xs text-gray-400">Scan at cinema entrance</p>
+                                    <img src={qrDataUrl || selectedBooking.qrCode} alt="QR Code"
+                                         className="w-32 h-32 mx-auto mb-2"/>
+                                    <p className="text-xs text-gray-400">Booking Code: {selectedBooking.bookingCode}</p>
                                 </div>
 
-                                {/* Action Buttons */}
                                 <div className="flex-1 space-y-3">
                                     <button
                                         onClick={handleDownloadTicket}
@@ -626,25 +596,17 @@ const BookingsPage = () => {
                                         <Download className="w-4 h-4" />
                                         Download Ticket
                                     </button>
-                                    <button
-                                        onClick={handleResendEmail}
-                                        className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
-                                    >
-                                        <Mail className="w-4 h-4" />
-                                        Resend Confirmation
-                                    </button>
                                 </div>
                             </div>
 
-                            {/* Booking Timestamp */}
                             <div className="mt-6 pt-4 border-t border-gray-700 text-center">
                                 <p className="text-xs text-gray-500">
-                                    Booked on {new Date(selectedBooking.bookedAt).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
+                                    Booked on {new Date(selectedBooking.bookedAt).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
                                 })}
                                 </p>
                             </div>

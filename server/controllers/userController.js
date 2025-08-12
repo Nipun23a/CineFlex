@@ -28,20 +28,31 @@ export const getAllUsers = async (req,res) => {
     }
 }
 
-export const updateUserInfo = async (req,res) =>{
+export const updateUserInfo = async (req, res) => {
     try {
-        const {userId,name,email} = req.body;
+        // Prefer the authenticated id from auth middleware
+        const userId = req.user?.id || req.body.userId;
+        if (!userId) return res.status(400).json({ message: "Missing userId" });
+
+        const { name, email } = req.body;
+        const update = {};
+        if (typeof name === "string") update.name = name.trim();
+        if (typeof email === "string") update.email = email.trim();
+
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            {name,email},
-            {new:true}
-        );
-        if (!updatedUser) return res.status(404).json({message:'User not found'});
-        res.status(200).json({message:'User info updated',user:updatedUser})
-    }catch (error){
-        res.status(500).json({message:'Failed to update user',error:error.message});
+            update,
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) return res.status(404).json({ message: "User not found" });
+
+        return res.status(200).json({ message: "User info updated", user: updatedUser });
+    } catch (error) {
+        console.error("updateUserInfo error:", error);
+        return res.status(500).json({ message: "Failed to update user", error: error.message });
     }
-}
+};
 
 export const getUserById = async (req, res) => {
     try {
