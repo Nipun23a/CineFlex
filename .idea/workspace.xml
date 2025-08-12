@@ -4,16 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Admin Side created with Backend andFrontend Created Full Stack Developed Succefully Only Need to update the dashboard">
+    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Admin Controller Added">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/admin/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/admin/Header.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/admin/Sidebar.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/admin/Sidebar.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/context/AuthContext.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/context/AuthContext.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/admin/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin/Dashboard.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/auth/LoginPage.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/utils/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/utils/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/layouts/AdminLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/layouts/AdminLayout.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,7 +66,7 @@
       <workItem from="1754635366737" duration="6742000" />
       <workItem from="1754836173047" duration="7088000" />
       <workItem from="1754846272038" duration="26311000" />
-      <workItem from="1754977326072" duration="18951000" />
+      <workItem from="1754977326072" duration="19413000" />
     </task>
     <task id="LOCAL-00001" summary="Backend and Frontend Connected">
       <option name="closed" value="true" />
@@ -163,7 +156,23 @@
       <option name="project" value="LOCAL" />
       <updated>1755020451624</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Admin Dashboard Updated">
+      <option name="closed" value="true" />
+      <created>1755022235336</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1755022235336</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Admin Controller Added">
+      <option name="closed" value="true" />
+      <created>1755022300553</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1755022300553</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -191,7 +200,9 @@
     <MESSAGE value="Static Profile Page Added" />
     <MESSAGE value="Static Admin Dashboard Created" />
     <MESSAGE value="Admin Side created with Backend andFrontend Created Full Stack Developed Succefully Only Need to update the dashboard" />
-    <option name="LAST_COMMIT_MESSAGE" value="Admin Side created with Backend andFrontend Created Full Stack Developed Succefully Only Need to update the dashboard" />
+    <MESSAGE value="Admin Dashboard Updated" />
+    <MESSAGE value="Admin Controller Added" />
+    <option name="LAST_COMMIT_MESSAGE" value="Admin Controller Added" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
