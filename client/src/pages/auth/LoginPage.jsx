@@ -41,13 +41,7 @@ const LoginPage = () => {
 
             const response = await loginUser({ email, password });
             const { token, user } = response.data;
-
-            // Persist in your auth context (and optionally localStorage if rememberMe)
             login(user, token, rememberMe);
-
-            // Decide where to go next:
-            // - If user is admin, default to /admin unless a redirect is provided.
-            // - If user is not admin, use redirect if provided, else go home.
             const next =
                 user.role === "admin"
                     ? safeRedirect(redirectParam || "/admin")

@@ -16,6 +16,8 @@ import {loadStripe} from "@stripe/stripe-js";
 import {Elements} from "@stripe/react-stripe-js";
 import BookingsPage from "./pages/BookingPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import AdminLayout from "./layouts/AdminLayout.jsx";
+import AdminDashboard from "./pages/admin/Dashboard.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -66,6 +68,16 @@ function App() {
                             path="/payment"
                             element={<MainLayout><PaymentPage/></MainLayout>}
                         />
+                        {/* Admin*/}
+                        <Route
+                            path="/admin"
+                            element={
+                                <AdminLayout>
+                                    <AdminDashboard/>
+                                </AdminLayout>
+                            }
+                        />
+                        {/* Auth */}
                         <Route
                             path='/login'
                             element={
