@@ -42,9 +42,12 @@ const LoginPage = () => {
             const response = await loginUser({ email, password });
             const { token, user } = response.data;
             login(user, token, rememberMe);
+            const toAdmin = (path) =>
+                typeof path === "string" && path.startsWith("/admin/dashboard") ? path : "/admin/dashboard";
+
             const next =
-                user.role === "admin"
-                    ? safeRedirect(redirectParam || "/admin")
+                (user?.role || "").toLowerCase() === "admin"
+                    ? safeRedirect(toAdmin(redirectParam))
                     : safeRedirect(redirectParam || "/");
 
             navigate(next, { replace: true });

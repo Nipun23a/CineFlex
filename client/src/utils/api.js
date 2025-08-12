@@ -181,4 +181,10 @@ export const confirmStripeBooking = async (paymentIntentId,extras={})=>{
     });
 };
 
+// ===================== ADMIN DASHBOARD APIs =====================
+export const getAdminDashboard = async () => {
+    return await axiosInstance.get('/admin/dashboard');
+};
+
+
 

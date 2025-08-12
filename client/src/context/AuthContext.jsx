@@ -31,6 +31,7 @@ export const AuthProvider = ({children}) => {
            sessionStorage.setItem('user',JSON.stringify(userData));
        }
        setUser(userData)
+       console.log(userData)
    }
 
     const logout = () => {
