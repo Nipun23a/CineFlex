@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Admin Controller Added">
+    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Bug Fixes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/layouts/AdminLayout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/layouts/AdminLayout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/seeders/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/seeders/index.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +66,8 @@
       <workItem from="1754635366737" duration="6742000" />
       <workItem from="1754836173047" duration="7088000" />
       <workItem from="1754846272038" duration="26311000" />
-      <workItem from="1754977326072" duration="19413000" />
+      <workItem from="1754977326072" duration="20053000" />
+      <workItem from="1755062118355" duration="391000" />
     </task>
     <task id="LOCAL-00001" summary="Backend and Frontend Connected">
       <option name="closed" value="true" />
@@ -172,7 +173,15 @@
       <option name="project" value="LOCAL" />
       <updated>1755022300553</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Bug Fixes">
+      <option name="closed" value="true" />
+      <created>1755023545090</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1755023545090</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -202,7 +211,8 @@
     <MESSAGE value="Admin Side created with Backend andFrontend Created Full Stack Developed Succefully Only Need to update the dashboard" />
     <MESSAGE value="Admin Dashboard Updated" />
     <MESSAGE value="Admin Controller Added" />
-    <option name="LAST_COMMIT_MESSAGE" value="Admin Controller Added" />
+    <MESSAGE value="Bug Fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Bug Fixes" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -219,13 +229,11 @@
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/client/src/pages/BookingPage.jsx</url>
           <line>44</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/client/src/pages/ProfilePage.jsx</url>
           <line>41</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>

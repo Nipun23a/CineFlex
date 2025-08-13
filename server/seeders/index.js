@@ -1,7 +1,7 @@
 import User from '../models/User.js';
 import Movie from '../models/Movie.js';
 import Theater from '../models/Theater.js';
-import Showtime from '../models/Showtime.js';
+import ShowTime from "../models/ShowTime.js";
 import Booking from '../models/Booking.js';
 
 import seedUsers from './userSeeder.js';
@@ -14,7 +14,7 @@ const runSeeders = async () => {
     const userCount = await User.countDocuments();
     const movieCount = await Movie.countDocuments();
     const theaterCount = await Theater.countDocuments();
-    const showtimeCount = await Showtime.countDocuments();
+    const showtimeCount = await ShowTime.countDocuments();
     const bookingCount = await Booking.countDocuments();
 
     if (userCount === 0) {
