@@ -5,7 +5,6 @@ const showtimeSchema = new mongoose.Schema({
     theater: { type: mongoose.Schema.Types.ObjectId, ref: 'Theater', required: true }, // NEW
     date: { type: Date, required: true },
     startTime: { type: String, required: true },
-    totalSeats: { type: Number, required: true },
     bookedSeats: [{ type: Number }],
     price: { type: Number, required: true }
 });

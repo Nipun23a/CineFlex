@@ -344,13 +344,21 @@ export const updatePaymentStatus = async (req, res) => {
 export const getBookedSeatsByShowtime = async (req, res) => {
     try {
         const { showtimeId } = req.params;
-        const includePending = req.query.includePending === 'true';
-        const statuses = includePending ? ['paid', 'pending'] : ['paid'];
+        const includePending = req.query.includePending === "true";
+        const statuses = includePending ? ["paid", "pending"] : ["paid"];
 
-        const bookings = await Booking.find(
-            { showtime: showtimeId, paymentStatus: { $in: statuses } },
-        )
-            .select('seats -_id')
+        // 1️⃣ Get the showtime (only price field)
+        const showtime = await Showtime.findById(showtimeId).select("price");
+        if (!showtime) {
+            return res.status(404).json({ message: "Showtime not found" });
+        }
+
+        // 2️⃣ Get booked seats
+        const bookings = await Booking.find({
+            showtime: showtimeId,
+            paymentStatus: { $in: statuses },
+        })
+            .select("seats -_id")
             .lean();
 
         const codesSet = new Set();
@@ -378,16 +386,17 @@ export const getBookedSeatsByShowtime = async (req, res) => {
             }
         }
 
+        // 3️⃣ Return price + seat data (no count)
         res.json({
             showtimeId,
-            count: seats.length,
+            price: showtime.price,
             seats,
             codes: seats.map((s) => s.code),
         });
     } catch (error) {
-        console.error('getBookedSeatsByShowtime error:', error);
+        console.error("getBookedSeatsByShowtime error:", error);
         res
             .status(500)
-            .json({ message: 'Failed to load booked seats', error: error.message });
+            .json({ message: "Failed to load booked seats", error: error.message });
     }
 };
