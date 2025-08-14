@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {Search,Star,Play,ChevronLeft,ChevronRight,Calendar} from "lucide-react";
 import {getAllMovies} from "../utils/api.js";
+import {useNavigate} from "react-router-dom";
 
 const HomePage = () => {
     const [searchQuery,setSearchQuery] = useState("");
@@ -9,6 +10,12 @@ const HomePage = () => {
     const [featuredMovie,setFeaturedMovie] = useState([]);
     const [nowShowing,setNowShowing] = useState([]);
     const [comingSoon,setComingSoon] = useState([]);
+    const navigate = useNavigate();
+
+    const handleNavigate = (id) => {
+        navigate(`/movies/${id}`); // 👈 You can change this to match your route pattern
+    };
+
 
     useEffect(() => {
         const fetchMovies = async () => {
@@ -161,7 +168,11 @@ const HomePage = () => {
                                         <div className="p-6">
                                             <h3 className="text-xl font-semibold mb-2">{movie.title}</h3>
                                             <p className="text-gray-400 mb-4">{movie.genre?.join(', ')}</p>
-                                            <button className="w-full py-3 rounded-lg font-semibold text-black hover:scale-105 transform transition-all duration-200" style={{ backgroundColor: '#FFD700' }}>
+                                            <button
+                                                onClick={() => handleNavigate(movie._id)}
+                                                className="w-full py-3 rounded-lg font-semibold text-black hover:scale-105 transform transition-all duration-200"
+                                                style={{backgroundColor: "#FFD700"}}
+                                            >
                                                 Book Tickets
                                             </button>
                                         </div>

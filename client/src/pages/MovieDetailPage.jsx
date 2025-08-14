@@ -21,20 +21,45 @@ const MoviePage = () => {
     const [tmdbReviews,setTmdbReviews] = useState([]);
     const [tmdbLoading,setTmdbLoading] = useState(false);
 
+    const ymd = (d) => {
+        const dt = new Date(d);
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, "0");
+        const day = String(dt.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await getShowTimeByMovie(id);
-                const data = response.data;
+                const data = Array.isArray(response?.data) ? response.data : [];
 
-                if (Array.isArray(data) && data.length > 0) {
-                    setMovie(data[0].movie);
-                    setShowtimesData(data);
+                // Keep only today or future showdates
+                const today = ymd(new Date());
+                const upcoming = data.filter(st => ymd(st.date) >= today);
 
-                    const defaultDate = new Date(data[0].date).toISOString().split("T")[0];
-                    const defaultCinema = data[0].theater?.name ?? '';
+                if (upcoming.length > 0) {
+                    setMovie(upcoming[0].movie);
+                    setShowtimesData(upcoming);
+
+                    const defaultDate = ymd(upcoming[0].date);
+                    const defaultCinema = upcoming[0].theater?.name ?? "";
                     setSelectedDate(defaultDate);
                     setSelectedCinema(defaultCinema);
+
+                    // Optional: preselect first time for better UX
+                    const firstTime = upcoming
+                        .filter(st => ymd(st.date) === defaultDate && (st.theater?.name ?? "") === defaultCinema)
+                        .map(st => st.startTime)[0];
+                    setSelectedTime(firstTime ?? null);
+                } else {
+                    // No upcoming showtimes
+                    setMovie(data[0]?.movie ?? null);
+                    setShowtimesData([]);   // important: empty, triggers "no showtime" UI
+                    setSelectedDate("");
+                    setSelectedCinema("");
+                    setSelectedTime(null);
                 }
             } catch (error) {
                 console.error("Failed to fetch showtimes", error);
@@ -43,6 +68,7 @@ const MoviePage = () => {
 
         fetchData();
     }, [id]);
+
 
     useEffect(() => {
         const hydrateTmdb = async () => {
@@ -72,7 +98,7 @@ const MoviePage = () => {
     }, [movie]);
 
     const selectedShowtimeObj = showtimesData.find(st =>
-        new Date(st.date).toISOString().split('T')[0] === selectedDate &&
+        ymd(st.date) === selectedDate &&
         st.theater?.name === selectedCinema &&
         st.startTime === selectedTime
     );
@@ -120,13 +146,14 @@ const MoviePage = () => {
     };
 
     const groupedShowtimes = showtimesData.reduce((acc, st) => {
-        const date = new Date(st.date).toISOString().split("T")[0];
+        const date = ymd(st.date);
         if (!acc[date]) acc[date] = {};
         const name = st.theater?.name ?? "Unknown Theater";
         if (!acc[date][name]) acc[date][name] = [];
         acc[date][name].push(st.startTime);
         return acc;
     }, {});
+
 
 
 
@@ -373,7 +400,11 @@ const MoviePage = () => {
                                     <div>
                                         <span className="text-gray-400">Release:</span>
                                         <span className="ml-2 text-white">
-                      {new Date(movie.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(movie.releaseDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                      })}
                     </span>
                                     </div>
                                 )}
@@ -395,70 +426,86 @@ const MoviePage = () => {
                         </div>
 
                         {/* Showtimes */}
-                        <div id="showtimes" className="p-6 rounded-xl" style={{ backgroundColor: '#1E1E2F' }}>
+                        <div id="showtimes" className="p-6 rounded-xl" style={{backgroundColor: '#1E1E2F'}}>
                             <h3 className="text-xl font-bold mb-6">Showtimes</h3>
 
-                            {/* Date Selection */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Select Date</label>
-                                <select
-                                    value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{ backgroundColor: '#121212' }}
-                                >
-                                    {Object.keys(showtimes).map(date => (
-                                        <option key={date} value={date}>{formatDate(date)}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Cinema Selection */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Select Cinema</label>
-                                <select
-                                    value={selectedCinema}
-                                    onChange={(e) => setSelectedCinema(e.target.value)}
-                                    className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                                    style={{ backgroundColor: '#121212' }}
-                                >
-                                    {Object.keys(showtimes[selectedDate] || {}).map(cinema => (
-                                        <option key={cinema} value={cinema}>{cinema}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Showtimes Grid */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Select Time</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {(showtimes[selectedDate]?.[selectedCinema] || []).map((time, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setSelectedTime(time)}
-                                            className={`p-3 rounded-lg border text-center font-medium transition-all duration-200 ${
-                                                selectedTime === time
-                                                    ? 'bg-yellow-500 border-yellow-500 text-black'
-                                                    : 'border-gray-600 hover:border-yellow-500'
-                                            }`}
+                            {Object.keys(groupedShowtimes).length === 0 ? (
+                                <p className="text-gray-400">No showtime dates found.</p>
+                            ) : (
+                                <>
+                                    {/* Date Selection */}
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Select
+                                            Date</label>
+                                        <select
+                                            value={selectedDate}
+                                            onChange={(e) => {
+                                                setSelectedDate(e.target.value);
+                                                // Reset time when date changes
+                                                setSelectedTime(null);
+                                            }}
+                                            className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
+                                            style={{backgroundColor: '#121212'}}
                                         >
-                                            {time}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                                            {Object.keys(groupedShowtimes).map(date => (
+                                                <option key={date} value={date}>{formatDate(date)}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                            <button
-                                onClick={handleShowtimeClick}
-                                disabled={!selectedTime}
-                                className={`w-full py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
-                                    selectedTime
-                                        ? 'bg-yellow-500 text-black hover:scale-[1.02] hover:bg-yellow-600'
-                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                }`}
-                            >
-                                Continue to Seat Selection
-                            </button>
+                                    {/* Cinema Selection */}
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Select
+                                            Cinema</label>
+                                        <select
+                                            value={selectedCinema}
+                                            onChange={(e) => {
+                                                setSelectedCinema(e.target.value);
+                                                setSelectedTime(null);
+                                            }}
+                                            className="w-full p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
+                                            style={{backgroundColor: '#121212'}}
+                                        >
+                                            {Object.keys(groupedShowtimes[selectedDate] || {}).map(cinema => (
+                                                <option key={cinema} value={cinema}>{cinema}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Showtimes Grid */}
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Select
+                                            Time</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {(groupedShowtimes[selectedDate]?.[selectedCinema] || []).map((time, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setSelectedTime(time)}
+                                                    className={`p-3 rounded-lg border text-center font-medium transition-all duration-200 ${
+                                                        selectedTime === time
+                                                            ? 'bg-yellow-500 border-yellow-500 text-black'
+                                                            : 'border-gray-600 hover:border-yellow-500'
+                                                    }`}
+                                                >
+                                                    {time}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleShowtimeClick}
+                                        disabled={!selectedTime}
+                                        className={`w-full py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                                            selectedTime
+                                                ? 'bg-yellow-500 text-black hover:scale-[1.02] hover:bg-yellow-600'
+                                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        Continue to Seat Selection
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -472,7 +519,7 @@ const MoviePage = () => {
                             onClick={() => setIsTrailerPlaying(false)}
                             className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors"
                         >
-                            <X size={32} />
+                            <X size={32}/>
                         </button>
                         <iframe
                             className="w-full h-full rounded-lg"
