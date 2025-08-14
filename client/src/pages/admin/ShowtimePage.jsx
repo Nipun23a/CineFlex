@@ -22,7 +22,6 @@ function ShowtimeFormModal({ open, mode = "create", initial = null, onClose, onS
         theater: "",
         date: "",
         startTime: "",
-        totalSeats: "",
         price: "",
     });
     const [errors, setErrors] = useState({});
@@ -38,11 +37,10 @@ function ShowtimeFormModal({ open, mode = "create", initial = null, onClose, onS
                 theater: theaterId,
                 date: toDateInput(initial.date),
                 startTime: initial.startTime || "",
-                totalSeats: initial.totalSeats ?? "",
                 price: initial.price ?? "",
             });
         } else {
-            setForm({ movie: "", theater: "", date: "", startTime: "", totalSeats: "", price: "" });
+            setForm({ movie: "", theater: "", date: "", startTime: "", price: "" });
         }
         setErrors({});
         setSubmitting(false);
@@ -54,7 +52,6 @@ function ShowtimeFormModal({ open, mode = "create", initial = null, onClose, onS
         if (!form.theater) e.theater = "Theater is required";
         if (!form.date) e.date = "Date is required";
         if (!form.startTime) e.startTime = "Start time is required";
-        if (form.totalSeats === "" || Number(form.totalSeats) <= 0) e.totalSeats = "Total seats must be > 0";
         if (form.price === "" || Number(form.price) < 0) e.price = "Price must be ≥ 0";
         return e;
     };
@@ -72,7 +69,6 @@ function ShowtimeFormModal({ open, mode = "create", initial = null, onClose, onS
             theater: form.theater,
             date: form.date,                 // ISO yyyy-mm-dd from <input type="date">
             startTime: form.startTime,       // "HH:MM"
-            totalSeats: Number(form.totalSeats),
             price: Number(form.price),
         };
 
@@ -167,19 +163,6 @@ function ShowtimeFormModal({ open, mode = "create", initial = null, onClose, onS
                                 />
                                 {errors.startTime && <p className="text-xs text-red-300 mt-1">{errors.startTime}</p>}
                             </div>
-
-                            <div>
-                                <label className="text-sm text-white/70">Total Seats *</label>
-                                <input
-                                    type="number" min="1"
-                                    value={form.totalSeats}
-                                    onChange={(e) => setField("totalSeats", e.target.value)}
-                                    placeholder="120"
-                                    className="mt-1 w-full rounded-xl bg-white/[0.06] border border-white/10 px-3 py-2 outline-none"
-                                />
-                                {errors.totalSeats && <p className="text-xs text-red-300 mt-1">{errors.totalSeats}</p>}
-                            </div>
-
                             <div>
                                 <label className="text-sm text-white/70">Price *</label>
                                 <input

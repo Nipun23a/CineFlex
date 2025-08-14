@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Bug Fixing">
+    <list default="true" id="59d92df9-1b13-4c13-a83d-3491d5b06925" name="Changes" comment="Backend Bug Fixes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/controllers/showtimeController.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/controllers/showtimeController.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/models/Showtime.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/models/Showtime.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/src/pages/admin/ShowtimePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/pages/admin/ShowtimePage.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,7 +68,7 @@
       <workItem from="1754846272038" duration="26311000" />
       <workItem from="1754977326072" duration="20053000" />
       <workItem from="1755062118355" duration="5057000" />
-      <workItem from="1755147975034" duration="4090000" />
+      <workItem from="1755147975034" duration="6324000" />
     </task>
     <task id="LOCAL-00001" summary="Backend and Frontend Connected">
       <option name="closed" value="true" />
@@ -247,7 +246,15 @@
       <option name="project" value="LOCAL" />
       <updated>1755173038262</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="Backend Bug Fixes">
+      <option name="closed" value="true" />
+      <created>1755174262645</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1755174262645</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -284,7 +291,8 @@
     <MESSAGE value="Vercel Json Added" />
     <MESSAGE value="CI Cd Updated" />
     <MESSAGE value="Bug Fixing" />
-    <option name="LAST_COMMIT_MESSAGE" value="Bug Fixing" />
+    <MESSAGE value="Backend Bug Fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Backend Bug Fixes" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
