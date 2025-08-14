@@ -3,6 +3,7 @@ import Booking from '../models/Booking.js';
 import Showtime from '../models/Showtime.js';
 import Theater from '../models/Theater.js';
 import mongoose from "mongoose";
+import {clearLocksFor, getIo, isLockedByOther} from "../ws.js";
 
 
 
@@ -27,6 +28,10 @@ const normalizeSeatsToGroups = (seats) => {
         .filter(Boolean);
     return flat.length ? [flat] : [];
 };
+
+const toCodes = (seatGroups) =>
+    seatGroups.flat().map(s => `${String(s.row).toUpperCase()}${Number(s.number)}`);
+
 
 export const createBooking = async (req, res) => {
     try {
@@ -74,6 +79,14 @@ export const createBooking = async (req, res) => {
 
         // Simple conflict check (works with nested seats)
         const flatSeats = seatsGroups.flat();
+        const userId = req.user?.id || '';
+        const selectedCodes = flatSeats.map(s => `${String(s.row).toUpperCase()}${Number(s.number)}`);
+        for (const code of selectedCodes) {
+            if (isLockedByOther(showtimeId, code, userId)) {
+                return res.status(409).json({ message: `Seat ${code} is temporarily locked by another user.` });
+            }
+        }
+
         const orConds = flatSeats.map(s => ({
             seats: { $elemMatch: { $elemMatch: { row: s.row, number: s.number } } }
         }));
@@ -149,6 +162,14 @@ export const createStripePaymentIntent = async (req, res) => {
 
         // Quick conflict check (same as your normal create)
         const flatSeats = seatGroups.flat();
+        const selectedCodes = flatSeats.map(s => `${String(s.row).toUpperCase()}${Number(s.number)}`);
+
+// Reject if any seat is locked by another user
+        for (const code of selectedCodes) {
+            if (isLockedByOther(showtimeId, code, userId)) {
+                return res.status(409).json({ message: `Seat ${code} is temporarily locked by another user.` });
+            }
+        }
         const orConds = flatSeats.map(s => ({
             seats: { $elemMatch: { $elemMatch: { row: s.row, number: s.number } } }
         }));
@@ -251,6 +272,9 @@ export const confirmStripeAndCreateBooking = async (req, res) => {
             totalPrice,
             paymentStatus: 'paid'
         });
+        const codes = toCodes(seatsGroups);
+        clearLocksFor(showtimeId, codes);
+        getIo()?.to(`showtime:${showtimeId}`).emit("seats:booked", { showtimeId, codes });
 
         return res.status(201).json({ message: 'Booking created.', booking });
     } catch (error) {

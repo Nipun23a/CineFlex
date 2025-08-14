@@ -15,7 +15,6 @@ const PaymentPage = () => {
     const elements = useElements();
 
     const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||'');
-    console.log(stripePromise);
 
     // 1) Read booking payload from router state or sessionStorage (for refresh/login round trip)
     const navState = location.state || {};
@@ -227,7 +226,7 @@ const PaymentPage = () => {
                             <div><strong>Time:</strong> {bookingData.time}</div>
                             <div><strong>Cinema:</strong> {bookingData.cinema}</div>
                             <div><strong>Seats:</strong> {bookingData.seats?.join(', ')}</div>
-                            <div><strong>Total:</strong> ${Number(bookingData.total || 0).toFixed(2)}</div>
+                            <div><strong>Total:</strong> LKR{Number(bookingData.total || 0).toFixed(2)}</div>
                         </div>
                     </div>
 
@@ -411,17 +410,17 @@ const PaymentPage = () => {
                                     <div className="border-b border-gray-700 pb-4">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-gray-400">Tickets ({bookingData.seats?.length || 0})</span>
-                                            <span>${Math.max((bookingData.total || 0) - 2.5, 0).toFixed(2)}</span>
+                                            <span>LKR {Math.max((bookingData.total || 0) - 500, 0).toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between mb-1">
                                             <span className="text-gray-400">Service Fee</span>
-                                            <span>$2.50</span>
+                                            <span>LKR 500</span>
                                         </div>
                                     </div>
 
                                     <div className="flex justify-between font-bold text-lg">
                                         <span>Total</span>
-                                        <span>${Number(bookingData.total || 0).toFixed(2)}</span>
+                                        <span>LKR {Number(bookingData.total || 0).toFixed(2)}</span>
                                     </div>
 
                                     <button

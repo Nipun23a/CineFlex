@@ -1,15 +1,13 @@
 // src/pages/SeatBookingPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Ticket,Calendar,Clock,MapPin } from 'lucide-react';
-import {getAllSeatForShowTime} from "../utils/api.js";
+import { ArrowLeft, Ticket, Calendar, Clock, MapPin } from 'lucide-react';
+import { getAllSeatForShowTime } from "../utils/api.js";
 
 const SeatBookingPage = () => {
-
     const navigate = useNavigate();
     const location = useLocation();
-    const { showtimeId, price,movie, date, cinema, time} = location.state || {};
-    console.log(showtimeId);
+    const { showtimeId, price, movie, date, cinema, time } = location.state || {};
 
     const [seats, setSeats] = useState([]);
     const [selectedSeats, setSelectedSeats] = useState([]);
@@ -19,6 +17,13 @@ const SeatBookingPage = () => {
     const [bookedCodes, setBookedCodes] = useState(new Set());
     const [loadingBooked, setLoadingBooked] = useState(false);
 
+    // NEW: dynamic ticket price (from state or backend)
+    const [ticketPrice, setTicketPrice] = useState(typeof price === 'number' ? price : 0);
+
+    const SERVICE_FEE_LKR = 500;
+
+    const formatLKR = (value) =>
+        new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value || 0);
 
     // Redirect if no booking info
     useEffect(() => {
@@ -27,6 +32,7 @@ const SeatBookingPage = () => {
         }
     }, [movie, date, cinema, time, navigate]);
 
+    // Load booked seats + (optionally) price from backend
     useEffect(() => {
         if (!showtimeId) return;
 
@@ -34,27 +40,34 @@ const SeatBookingPage = () => {
         setLoadingBooked(true);
         getAllSeatForShowTime(showtimeId)
             .then(({ data }) => {
-                // backend returns { codes: ["A1","B2",...], seats: [{row,number,code}] }
+                // backend returns { price, codes: ["A1","B2",...], seats: [{row,number,code}] }
                 const codes =
                     data?.codes ??
                     (Array.isArray(data?.seats)
-                        ? data.seats.map(s => s.code || `${s.row}${s.number}`)
+                        ? data.seats.map((s) => s.code || `${s.row}${s.number}`)
                         : []);
-                if (isMounted) setBookedCodes(new Set(codes));
+                if (isMounted) {
+                    setBookedCodes(new Set(codes));
+                    if (typeof data?.price === 'number') {
+                        setTicketPrice(data.price); // prefer authoritative backend price
+                    }
+                }
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error('Failed to load booked seats', err);
                 if (isMounted) setBookedCodes(new Set());
             })
             .finally(() => isMounted && setLoadingBooked(false));
 
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+        };
     }, [showtimeId]);
 
+    // Build seat grid with booked flags
     useEffect(() => {
-        const rowNames = ['A','B','C','D','E','F','G','H'];
-
-        const grid = rowNames.slice(0, rows).map(r =>
+        const rowNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const grid = rowNames.slice(0, rows).map((r) =>
             Array.from({ length: cols }, (_, c) => {
                 const code = `${r}${c + 1}`;
                 const isBooked = bookedCodes.has(code);
@@ -83,11 +96,8 @@ const SeatBookingPage = () => {
         );
         setSeats(newSeats);
 
-        // use the seat code for selected list
         const code = seat.id; // e.g., "A7"
-        setSelectedSeats(prev =>
-            !seat.isSelected ? [...prev, code] : prev.filter(id => id !== code)
-        );
+        setSelectedSeats((prev) => (!seat.isSelected ? [...prev, code] : prev.filter((id) => id !== code)));
     };
 
     const getSeatColor = (status, isSelected) => {
@@ -101,9 +111,9 @@ const SeatBookingPage = () => {
         return '';
     };
 
-    const calculateTotal = () => {
-        return selectedSeats.length * 15; // $15 per seat
-    };
+    // PRICING (LKR)
+    const ticketsTotal = selectedSeats.length * (ticketPrice || 0);
+    const total = ticketsTotal + SERVICE_FEE_LKR;
 
     const handleProceedToPayment = () => {
         navigate('/payment', {
@@ -114,27 +124,27 @@ const SeatBookingPage = () => {
                 cinema,
                 time,
                 seats: selectedSeats,
-                total: calculateTotal() + 2.50
-            }
+                perSeatPrice: ticketPrice,
+                serviceFee: SERVICE_FEE_LKR,
+                currency: 'LKR',
+                total,
+            },
         });
     };
 
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
         });
     };
 
     return (
         <>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center text-gray-400 hover:text-white mb-8"
-                >
+                <button onClick={() => navigate(-1)} className="flex items-center text-gray-400 hover:text-white mb-8">
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back to Movie
                 </button>
@@ -159,6 +169,7 @@ const SeatBookingPage = () => {
                                 </div>
                             </div>
 
+                            {/* Screen */}
                             <div className="text-center mb-10">
                                 <div className="w-full h-4 bg-gradient-to-b from-yellow-500 to-transparent rounded-t-lg opacity-50"></div>
                                 <div className="text-gray-400 font-medium mt-2">SCREEN</div>
@@ -170,9 +181,7 @@ const SeatBookingPage = () => {
                                 <div className="space-y-4">
                                     {seats.map((row, rowIndex) => (
                                         <div key={rowIndex} className="flex items-center gap-4">
-                                            <div className="w-8 text-center font-medium text-gray-400">
-                                                {getSeatLabel(rowIndex, 0)}
-                                            </div>
+                                            <div className="w-8 text-center font-medium text-gray-400">{getSeatLabel(rowIndex, 0)}</div>
 
                                             <div className="flex gap-2 flex-wrap">
                                                 {row.map((seat, colIndex) => (
@@ -180,20 +189,17 @@ const SeatBookingPage = () => {
                                                         key={`${rowIndex}-${colIndex}`}
                                                         onClick={() => handleSeatClick(rowIndex, colIndex)}
                                                         disabled={seat.status === 'booked'}
-                                                        className={`
-                w-10 h-10 flex items-center justify-center rounded
-                border-2 transition-colors
-                ${getSeatColor(seat.status, seat.isSelected)}
-              `}
+                                                        className={`w-10 h-10 flex items-center justify-center rounded border-2 transition-colors ${getSeatColor(
+                                                            seat.status,
+                                                            seat.isSelected
+                                                        )}`}
                                                     >
                                                         {colIndex + 1}
                                                     </button>
                                                 ))}
                                             </div>
 
-                                            <div className="w-8 text-center font-medium text-gray-400">
-                                                {getSeatLabel(rowIndex, 0)}
-                                            </div>
+                                            <div className="w-8 text-center font-medium text-gray-400">{getSeatLabel(rowIndex, 0)}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -230,14 +236,17 @@ const SeatBookingPage = () => {
                                         </p>
                                         <p className="text-gray-400 text-sm">{cinema}</p>
                                     </div>
-                                    <div className="text-yellow-500 font-medium">$15.00</div>
+                                    {/* Per-seat price in LKR (no hardcoded USD) */}
+                                    <div className="text-yellow-500 font-medium">
+                                        {ticketPrice ? formatLKR(ticketPrice) : '—'}
+                                    </div>
                                 </div>
 
                                 <div className="border-b border-gray-700 pb-4">
                                     <h4 className="font-semibold mb-2">Selected Seats</h4>
                                     {selectedSeats.length > 0 ? (
                                         <div className="flex flex-wrap gap-2">
-                                            {selectedSeats.map(code => (
+                                            {selectedSeats.map((code) => (
                                                 <div key={code} className="px-3 py-1 rounded-full bg-yellow-500 bg-opacity-20 text-sm">
                                                     {code}
                                                 </div>
@@ -251,29 +260,27 @@ const SeatBookingPage = () => {
                                 <div className="border-b border-gray-700 pb-4">
                                     <div className="flex justify-between mb-1">
                                         <span className="text-gray-400">Tickets ({selectedSeats.length})</span>
-                                        <span>${selectedSeats.length * 15}.00</span>
+                                        <span>{formatLKR(ticketsTotal)}</span>
                                     </div>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-gray-400">Service Fee</span>
-                                        <span>$2.50</span>
+                                        <span>{formatLKR(SERVICE_FEE_LKR)}</span>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between font-bold text-lg">
                                     <span>Total</span>
-                                    <span>${(selectedSeats.length * 15 + 2.5).toFixed(2)}</span>
+                                    <span>{formatLKR(total)}</span>
                                 </div>
 
                                 <button
                                     onClick={handleProceedToPayment}
                                     disabled={selectedSeats.length === 0}
-                                    className={`
-                    w-full py-4 rounded-lg font-semibold text-lg mt-4
-                    transition-all duration-200 flex items-center justify-center
-                    ${selectedSeats.length > 0
-                                        ? 'bg-yellow-500 text-black hover:bg-yellow-600'
-                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
-                  `}
+                                    className={`w-full py-4 rounded-lg font-semibold text-lg mt-4 transition-all duration-200 flex items-center justify-center ${
+                                        selectedSeats.length > 0
+                                            ? 'bg-yellow-500 text-black hover:bg-yellow-600'
+                                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                    }`}
                                 >
                                     <Ticket className="w-5 h-5 mr-2" />
                                     Proceed to Payment
